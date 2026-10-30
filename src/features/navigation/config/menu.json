@@ -1,0 +1,6 @@
+{
+  "items": [
+    { "id": "home", "type": "link", "label": "Home", "icon": "Home", "to": "/" },
+    { "id": "about", "type": "link", "label": "About", "icon": "Info", "to": "/about" }
+  ]
+}

@@ -1,0 +1,9 @@
+engineStrict: true
+savePrefix: ''
+
+# Platform binaries are supplied by optional dependencies; skip fallback build scripts.
+allowBuilds:
+  '@parcel/watcher': false
+  unrs-resolver: false
+minimumReleaseAgeExclude:
+  - i18next@26.5.12
