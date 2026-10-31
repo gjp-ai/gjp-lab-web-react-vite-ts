@@ -1,154 +1,93 @@
-# GJP Lab menu requirements
+# Menu requirements
 
-**Status:** Implemented. See [design and verification notes](../implement/menu.md).
-**Updated:** 2026-10-30
+**Status:** Implemented; browser verification remains pending.
 
-## 1. What we are building
+**Updated:** 2026-10-31
 
-A left sidebar that helps visitors explore GJP Lab's React, UI library, and
-TypeScript examples. Visitors can collapse it to save space. On smaller screens,
-the menu opens as a drawer over the page.
+**Code design:** [menu.md](../implement/menu.md)
 
-The sidebar, nested menus, JSON configuration, 1024px breakpoint, and drawer closing
-rules are confirmed. The other defaults below were used for implementation.
-Requirement IDs (M01–M13) make feedback and implementation checks easy to reference.
+## Purpose and scope
 
-## 2. Menu structure
+Provide shared navigation for GJP Lab's React, UI library, and TypeScript examples.
+Ship Home and About now; add nested feature groups only when their pages exist.
+The [proposed shadcn/ui showcase](shadcn-ui/README.md) defines the next menu group and
+its planned pages; these routes are not implemented yet.
+Search, permissions, backend navigation, and placeholder pages are outside scope.
 
-Currently, only Home and About have routes and are included in the shipped menu.
-The planned order as additional feature pages are implemented is:
+## Layout and navigation
 
-- **Home** — link to `/`.
-- **React features** — group of feature pages.
-- **UI library features** — group of feature pages.
-- **TypeScript features** — group of feature pages.
-- **About** — link to `/about`.
-
-The **GJP Lab** brand sits above the menu and links to Home. Keep the existing
-FlaskConical brand icon, Home icon, and Info icon for About.
-
-Groups may contain pages or smaller groups. Specific feature pages and their URLs
-will be defined separately. Only show groups that have real pages; do not add
-empty categories, broken links, or placeholder pages just to fill the menu.
-Search, permissions, and backend features are outside this work.
-
-## 3. How the menu behaves
-
-### Desktop
-
-- **M01 — Expand and collapse:** At **1024px or wider**, start with a **240px**
-  sidebar. Collapse it to a **64px** strip of icons. Keep the toggle visible and
-  label it “Collapse sidebar” or “Expand sidebar”. Show only the brand icon when
-  collapsed.
-- **M02 — Page layout:** The sidebar takes its own space and never covers content.
-  Keep it available while the page scrolls; let long menus scroll independently.
-  Keep the footer below the page. Toggling must not reload the page or reset its state.
-
-### Phones and tablets
-
-- **M03 — Open the drawer:** Below **1024px**, show a compact header with the brand
-  and an “Open navigation” button. The drawer slides in from the left with full
-  labels, a close button, and a dimmed background. Use **280px** width, reduced if
-  needed to fit a 320px screen. Do not show the desktop icon strip.
-- **M04 — Close the drawer:** Close with the close button, a click outside, Escape,
-  or completed navigation in the current tab, including Back/Forward. Selecting
-  the current page also closes it. Opening a link in another tab leaves this drawer
-  unchanged. Keep normal browser link behavior.
-- **M05 — Resize safely:** Moving to desktop closes the drawer and removes all
-  background blocking. Moving back to a smaller screen leaves it closed. If the
-  focused control disappears, move keyboard focus to a suitable visible control.
-
-### Remembering choices and finding pages
-
-- **M06 — Saved preference:** Remember desktop collapse state across navigation
-  and refresh using local storage key `gjp-lab.sidebar.collapsed`. Default to
-  expanded when the value is missing or invalid. If storage is unavailable, the
-  toggle must still work. Drawer visibility is separate and always starts closed.
-- **M07 — Current page:** Highlight the exact matching page link and identify it
-  to screen readers. Distinguish its containing groups and open them when the
-  route changes, including direct visits and Back/Forward. Keep the menu on the
-  not-found page, with no page link selected.
-- **M11 — Nested groups:** A group button opens or closes its children without
-  navigating or closing the drawer. Show a chevron and expose its open state with
-  `aria-expanded`. Multiple groups may stay open. Keep group choices while the app
-  remains open; route changes still open groups containing the current page.
-- **M12 — Groups when collapsed:** Selecting a group icon expands the sidebar and
-  opens that group. Keep focus on its button. Visitors then select a child page;
-  submenus must not depend on hovering.
-
-## 4. Accessible and comfortable to use
-
-- **M08 — Clear controls:** Use ordinary links inside labeled navigation, one main
-  content area, and a “Skip to content” link. Give buttons and icon-only controls
-  accessible names and relevant open/closed states. Hide decorative icons from
-  screen readers.
-- **M09 — Keyboard focus:** Opening the drawer moves focus inside. Tab and
-  Shift+Tab stay inside while it is open; background clicks and scrolling are
-  blocked. Closing without navigation returns focus to the opener. After
-  navigation to a different pathname, focus the destination main content. Initial
-  page loading must leave focus unchanged.
-- **M10 — Appearance:** Follow the selected light/dark/system mode and accent,
-  using the shared typography and [appearance requirements](theme.md). Clearly
-  distinguish the current page, hover, and keyboard focus. Show text tooltips on
-  hover and focus for collapsed icons. Aim for **44 × 44px** click/tap targets.
-  Long labels and deep nesting must not clip or cause horizontal scrolling at
-  320px. Support 200% zoom and reduced-motion preferences.
-
-## 5. Configure the menu in JSON
-
-**M13 — One menu file:** Use `src/features/navigation/config/menu.json` for labels, icons, order,
-links, and nesting on every screen size. This file is included in the implementation. JSON changes appear in the deployed app after rebuilding.
-**Adding a menu link does not create its page**; the page and route must exist first.
-
-Use an object with an `items` list. List order is display order, including inside groups.
-
-| Field | Meaning and rule |
+| ID | Requirement |
 | --- | --- |
-| `id` | Unique, non-empty identifier across the whole menu. |
-| `label` | Non-empty text shown to visitors. |
-| `type` | `link` for a page, or `group` for an expandable list. |
-| `icon` | Supported Lucide icon name; required for top-level entries, optional for children. |
-| `to` | Page URL for a link, such as `/about`. Must match an existing route. |
-| `children` | Non-empty list of links or groups, used only for a group. |
+| M01 | At viewport widths of 1024px or more, use a 240px sidebar that collapses to a 64px icon rail. Put a 44px icon-only collapse/expand button beside the brand; expose its name, state, and tooltip. Stack the brand and toggle in the collapsed rail. |
+| M02 | Reserve space for the sticky sidebar; do not overlay page content. Long navigation scrolls independently. Keep menu settings reachable at the bottom. Toggling preserves page state. |
+| M03 | Below 1024px, show the brand and Open navigation button in a compact header. Open a left modal drawer up to 280px wide, reduced to fit small screens. Include full navigation labels, close control, and dimmed backdrop. |
+| M04 | Close the drawer on its close button, Escape, outside click, or completed same-tab navigation, including Back/Forward. Selecting the current page also closes it. Preserve modified-click/new-tab behavior. |
+| M05 | Resizing to desktop closes the drawer and releases background blocking. Resizing back leaves it closed. Transfer focus when its current control becomes hidden. |
+| M06 | Store collapse preference under `gjp-lab.sidebar.collapsed`; default to expanded. Storage failures must not break controls. Drawer visibility starts closed and is not persisted. |
+| M07 | Mark only the exact current link, including Home. Open and distinguish its containing groups on route changes. Keep navigation visible on not-found pages, without a selected page link. |
+| M08 | Use labeled navigation, native links/buttons, a main landmark, and Skip to content. Hide decorative icons and name every icon-only action. |
+| M09 | Trap focus in the open drawer and return it appropriately on close. Focus main content after navigation to a different pathname. Initial loading must leave focus unchanged. |
+| M10 | Support Light/Dark, all ten accents, visible focus, tooltips, reduced motion, 200% zoom, and 44px targets. Avoid clipping and horizontal overflow at 320px. |
+| M11 | Group buttons expand/collapse children without navigating. Show a chevron and `aria-expanded`. Multiple groups may stay open; route changes open the current page's ancestors. |
+| M12 | Clicking a group in the collapsed rail expands the sidebar and opens that group, retaining focus. Do not depend on hover to reach children. |
+| M13 | Use one validated JSON menu for desktop and mobile, including order, labels, icons, routes, and nested groups. Configuration changes require rebuilding for deployment. |
 
-Links have `to` and no `children`; groups have `children` and no `to`.
-Validate the structure, IDs, icons, and routes before producing a production build.
-Errors must identify the entry and what needs fixing.
+The GJP Lab brand links to Home and uses FlaskConical. Current entries are Home
+(`/`, Home icon) and About (`/about`, Info icon). Future React, UI library, and
+TypeScript categories appear between them when implemented.
 
-## 6. Notes for implementation
+## Bottom controls
 
-- Keep shared layout and `Outlet` in [AppShell](../../src/app/app-shell.tsx).
-  Share the JSON menu across desktop and mobile; keep navigation state local to
-  AppShell. Appearance uses its separate feature-owned Zustand store.
-- Keep route registration in [router.tsx](../../src/app/router.tsx) and use typed
-  TanStack links. Validate JSON route strings with a typed mapping or guard, rather
-  than casting them to route types. Derive allowed targets from routes where practical.
-- Preserve [Vite's](../../vite.config.ts) `/lab/react/v2/` base and router
-  `basepath: import.meta.env.BASE_URL`. JSON targets omit this hosting prefix.
-- Reuse owned UI components, Base UI, named Lucide imports, and existing
-  [theme tokens](../../src/app/styles.css). Preserve Base Nova, StrictMode, strict
-  types, and local customizations. No additional dependency is planned.
-- Keep existing page behavior, including the Home technology diagram and About demos.
-  Follow [AGENTS.md](../../AGENTS.md) and update affected docs and source snapshots.
+Show **Language → Mode → Accent color**, without visible text labels, on every
+route. Use one horizontal row at the bottom of the expanded sidebar and mobile
+drawer. Stack the three 44px controls in the narrow collapsed rail.
 
-## 7. Ready-to-ship checklist
+| Control | Click behavior | State and accessibility |
+| --- | --- | --- |
+| Language | Immediately toggle English ↔ Chinese; no selector or popup. | Display a distinct icon for each language. Provide a translated name and next-action tooltip. Keep the choice for the current session. |
+| Mode | Immediately toggle Light ↔ Dark; no dialog. | Use Sun/Moon icons, a named toggle, pressed state, and next-action tooltip. Persist the selected mode; default to Light. |
+| Accent color | Open an accessible dialog containing the ten existing accent choices. | Tint the palette icon with the active accent. Apply changes immediately. Reset only the accent to Mint. |
 
-Jest covers schema and component behavior. The checklist below is the remaining
-browser/accessibility and deployment signoff; unchecked items are not verified.
+Keep these controls out of the Home header and mobile header. Switching language
+or mode preserves the route, drawer/collapse state, and other preferences. Home
+content is translated; current menu labels, About, and other English chrome keep
+their existing translation scope. System mode is removed. Legacy saved System
+values become Light while preserving a valid accent.
 
-- [ ] **Layout (M01–M03, M10):** Check 320, 375, 768, 1023, 1024, and 1440px in a
-      browser. No overlap or horizontal overflow; page demos still work.
-- [ ] **Drawer (M04–M05):** Check every close action, current-page selection,
-      Back/Forward, new-tab links, and resizing. No leftover overlay or scroll lock.
-- [ ] **State (M06):** Preference survives refresh/navigation; unavailable or invalid
-      storage is safe; mobile use does not change desktop preference.
-- [ ] **Accessibility (M07–M10):** Check keyboard use, focus, tooltips, screen-reader
-      names/states, skip link, zoom, and reduced motion.
-- [ ] **Groups (M11–M12):** Check nesting, multiple open groups, opening the current
-      page's groups, and selecting a group from the collapsed sidebar.
-- [ ] **Configuration (M13):** Check order, labels, and nesting in both layouts.
-      Invalid fields, duplicate IDs, unknown icons/routes, and empty groups fail validation.
-- [ ] **Routing:** Check direct URLs, refresh, not-found recovery, and generated
-      asset paths under `/lab/react/v2/`.
-- [ ] **Quality:** Run `pnpm test:coverage`, `pnpm check`, and `pnpm build`. Report actual browser checks
-      and limitations separately; local checks do not verify production host rewrites.
+See [appearance requirements](theme.md) for persistence and cross-tab behavior.
+
+## Menu configuration
+
+Source: [menu.json](../../src/features/navigation/config/menu.json). List order is
+display order; adding a link does not create a route.
+
+| Field | Rule |
+| --- | --- |
+| `items` | Root field containing a non-empty list. No other root fields. |
+| `id` | Non-empty string, unique throughout the tree. |
+| `label` | Non-empty display text. |
+| `type` | `link` or `group`. |
+| `icon` | Supported Lucide name; required at the top level, optional for children. |
+| `to` | Existing application route for a link; omit the hosting prefix. |
+| `children` | Non-empty list for a group. |
+
+Links have `to`, never `children`; groups have `children`, never `to`. Reject unknown
+fields, duplicate IDs, unsupported icons, unknown routes, and empty groups with
+errors identifying the entry. Preserve `/lab/react/v2/` as the hosting base.
+
+## Acceptance and verification
+
+Automated coverage includes schema validation, groups, exact active links,
+collapse persistence, navigation/focus behavior, direct language/mode toggles,
+changing icons, legacy System migration, and the mobile drawer's accent dialog.
+See the [verification summary](../README.md#verification) for recorded results.
+
+Remaining browser checks:
+
+- [ ] Check 320, 375, 768, 1023, 1024, and 1440px, both sidebar widths, and long menus.
+- [ ] Check keyboard focus, tooltips, 200% zoom, reduced motion, and drawer dismissal.
+- [ ] Check nesting, Back/Forward, modified clicks, resize transitions, and bottom controls.
+- [ ] Check refresh, direct URLs, not-found recovery, and production hosting fallback.
+
+Automated DOM tests do not establish browser layout, assistive-technology, or
+production-host verification.

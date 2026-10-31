@@ -101,7 +101,7 @@ underlying CSS variables. Those ordinary variables hold the current palette.
 
 Prefer these semantic names when extending shared UI. They describe a color's
 role rather than repeating a particular hex value in each component. AppearanceProvider writes root `data-mode`, `data-accent`, and `color-scheme`.
-The app supports Light, Dark, and System modes with ten accents. The custom
+The app supports Light and Dark modes with ten accents. The custom
 Tailwind `dark` variant follows `data-mode="dark"`, including portaled components.
 
 Biome's `css.parser.tailwindDirectives: true` lets it parse directives such as

@@ -1,7 +1,7 @@
 # GJP Lab appearance requirements
 
 **Status:** Implemented; complete browser/accessibility verification remains pending.
-**Updated:** 2026-10-30
+**Updated:** 2026-10-31
 
 ## 1. What we are building
 
@@ -10,13 +10,13 @@ For example, someone can use **Dark + Blue** or **Light + Mint**.
 
 “Theme color” means the accent used for primary buttons,
 links, highlights, and focus indicators. It does not mean replacing every surface
-with that color. The ten accent options below are confirmed. The implemented defaults are System mode and Mint accent.
+with that color. The ten accent options below are confirmed. The implemented defaults are Light mode and Mint accent.
 
 ## 2. Choices visitors will see
 
 | Setting | Options | Default |
 | --- | --- | --- |
-| Mode | Light, Dark, System | System — follow the device setting |
+| Mode | Light, Dark | Light |
 | Accent color | Ten presets listed below | Mint — the Supabase-inspired preset |
 
 ### Accent presets
@@ -52,23 +52,20 @@ or layout customization is included in the first version.
 
 ## 3. Where to find the controls
 
-- **T01 — Appearance button:** Put an “Appearance” button near the bottom of the
-  desktop sidebar. Keep it reachable when navigation is long. In the collapsed
-  sidebar, use an accessible icon button with a hover/focus tooltip.
-- **T02 — Settings panel:** Open a small accessible dialog containing separate
-  “Mode” and “Accent color” choices, plus “Reset appearance”. On phones/tablets,
-  provide the Appearance button in the header beside the navigation button.
-  Opening appearance settings must not require opening the navigation drawer.
-- **T03 — Immediate feedback:** Apply each selection immediately, with no Save
-  button. Closing the panel keeps the selection. Reset restores System + Mint.
-  Changing appearance must not reload the page or reset page state, menus, or forms.
-
-## 4. How preferences behave
-
-- **T04 — System mode:** Follow the device's light/dark preference on first visit
-  and whenever System is selected. Respond to device preference changes while the
-  app is open. Explicit Light or Dark choices override the device setting.
-  If the device preference cannot be read, use Light.
+- **T01 — Footer icons:** Put Language, Mode, and Accent color icon controls in
+  one bottom row of the expanded sidebar and mobile drawer. Use 44px targets,
+  accessible labels, tooltips, and visible focus. The narrow collapsed rail stacks
+  them vertically. The mode icon reflects Light/Dark; the palette uses the
+  active accent.
+- **T02 — Direct toggles:** Language immediately switches English ↔ Chinese,
+  with a distinct icon for each language. Mode immediately switches Light ↔ Dark,
+  with Sun/Moon icons and an accessible pressed state. Neither opens a popup.
+  Only Accent color opens a dialog with the ten choices.
+- **T03 — Immediate feedback:** Apply selections immediately. Reset accent color
+  restores Mint while preserving mode. Changes preserve language, route, and menus.
+- **T04 — Explicit modes:** Start in Light. Do not follow device appearance or
+  display a System option. Treat legacy saved System values as Light while keeping
+  valid accent choices. Startup and React must use the same migration.
 - **T05 — Independent choices:** Switching mode keeps the selected accent.
   Switching accent keeps the selected mode. Every combination must work.
 - **T06 — Remember choices:** Store mode and accent locally for this browser and
@@ -77,7 +74,7 @@ or layout customization is included in the first version.
   If storage is blocked or full, controls still work for the current session.
 - **T07 — Other tabs:** Synchronize saved changes between open tabs on the same
   origin. Removing the saved preference restores defaults in those tabs.
-- **T08 — Initial appearance:** Apply the saved or system appearance before the
+- **T08 — Initial appearance:** Apply the saved or default appearance before the
   first visible render, avoiding a flash of the wrong mode. Browser-native controls
   and scrollbars should follow the resolved light/dark mode too.
 
@@ -109,8 +106,8 @@ or layout customization is included in the first version.
   IDs and labels; a separate JSON theme file is not required for this version.
 - Share preference state through a focused React provider/hook. Reuse owned controls
   and Base UI primitives. No backend or additional state-management package is planned.
-- Keep startup preference resolution consistent with React state and clean up system
-  preference/storage listeners. Preserve the routing base and existing menu behavior.
+- Keep startup preference resolution consistent with React state and clean up
+  storage listeners. Preserve the routing base and existing menu behavior.
 - Keep [menu requirements](menu.md), README, contributor instructions, and setup
   snapshots aligned. The [code design](../implement/theme.md) describes the implementation.
 
@@ -118,16 +115,16 @@ or layout customization is included in the first version.
 
 The implemented decisions are:
 
-- **System + Mint** on first visit.
+- **Light + Mint** on first visit.
 - **Ten accents are confirmed:** Indigo, Violet, Mint, Sky, Cyan, Orange, Blue,
   Blurple, Green, and Rose. The default is Mint (`#3ECF8E` reference).
-- **A dedicated Appearance dialog**, opened from the sidebar or mobile header.
+- **Direct language/mode toggles and an accent dialog**, in the shared menu footer.
 - **Preset accents only**, with saved preferences synchronized across local tabs.
 
 ## 8. Verification checklist
 
 - [ ] Check all 20 rendered combinations: two modes × ten accents.
-- [ ] Check System mode with every accent under both device modes and while the device setting changes.
+- [ ] Check legacy System values migrate to Light and device preference changes do not change the selected mode.
 - [ ] Check refresh, direct URLs, reset, cross-tab updates, corrupt values, and
       unavailable storage. Confirm mode and accent remain independent.
 - [ ] Check initial loading without a wrong-mode flash, including a slowed reload.

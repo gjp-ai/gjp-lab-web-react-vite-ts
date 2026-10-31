@@ -4,18 +4,12 @@ import { resolve } from 'node:path';
 import { runInNewContext } from 'node:vm';
 import { test } from '@jest/globals';
 import { appearanceHeadScript } from '../../../../build/appearance-head.ts';
-import {
-  accents,
-  appearanceKey,
-  parseAppearance,
-  readAppearance,
-  resolveMode,
-} from '../model/appearance.ts';
+import { accents, appearanceKey, parseAppearance, readAppearance } from '../model/appearance.ts';
 
-const defaults = { mode: 'system', accent: 'mint' };
+const defaults = { mode: 'light', accent: 'mint' };
 test('all modes and ten accents round trip independently', () => {
   assert.equal(accents.length, 10);
-  for (const mode of ['light', 'dark', 'system'])
+  for (const mode of ['light', 'dark'])
     for (const accent of accents) {
       assert.deepEqual(parseAppearance(JSON.stringify({ mode, accent }), accents), {
         mode,
@@ -31,7 +25,7 @@ test('invalid fields default separately; malformed storage is safe', () => {
     accent: 'mint',
   });
   assert.deepEqual(parseAppearance('{"mode":"unknown","accent":"rose"}', accents), {
-    mode: 'system',
+    mode: 'light',
     accent: 'rose',
   });
   assert.deepEqual(
@@ -43,12 +37,11 @@ test('invalid fields default separately; malformed storage is safe', () => {
     defaults,
   );
 });
-test('explicit mode overrides system preference', () => {
-  for (const systemDark of [true, false]) {
-    assert.equal(resolveMode('light', systemDark), 'light');
-    assert.equal(resolveMode('dark', systemDark), 'dark');
-    assert.equal(resolveMode('system', systemDark), systemDark ? 'dark' : 'light');
-  }
+test('legacy system preferences migrate to light while preserving the accent', () => {
+  assert.deepEqual(parseAppearance('{"mode":"system","accent":"rose"}', accents), {
+    mode: 'light',
+    accent: 'rose',
+  });
 });
 test('blocking bootstrap matches shared preferences for every combination', () => {
   for (const mode of ['light', 'dark', 'system'])
@@ -65,7 +58,7 @@ test('blocking bootstrap matches shared preferences for every combination', () =
           },
           matchMedia: () => ({ matches: systemDark }),
         });
-        assert.equal(root.dataset.mode, resolveMode(mode, systemDark));
+        assert.equal(root.dataset.mode, mode === 'dark' ? 'dark' : 'light');
         assert.equal(root.dataset.accent, accent);
         assert.equal(root.style.colorScheme, root.dataset.mode);
       }

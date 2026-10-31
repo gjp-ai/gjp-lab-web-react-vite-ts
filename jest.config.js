@@ -1,6 +1,9 @@
+import { technologyVersions } from './build/technology-versions.ts';
+
 /** @type {import('jest').Config} */
 export default {
   testEnvironment: 'node',
+  globals: { __TECH_VERSIONS__: technologyVersions },
   testMatch: [
     '<rootDir>/src/**/__tests__/**/*.test.{js,ts,tsx}',
     '<rootDir>/tests/**/*.test.{js,ts,tsx}',

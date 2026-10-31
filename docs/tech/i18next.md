@@ -2,7 +2,7 @@
 
 **Status:** Installed and integrated. Versions: `i18next` **26.5.12** and
 `react-i18next` **17.1.9**. Home supports English and Chinese; the rest of the
-application retains its existing English text. Updated: 2026-10-30.
+application retains its existing English text. Updated: 2026-10-31.
 
 ## Current modules
 
@@ -11,10 +11,13 @@ application retains its existing English text. Updated: 2026-10-30.
 | [i18n.ts](../../src/shared/i18n/i18n.ts) | Stable instance, bundled Home resources, English fallback, and initialization promise |
 | [prepare.ts](../../src/app/prepare.ts) | Await initialization before React mounts |
 | [providers.tsx](../../src/app/providers.tsx) | I18nextProvider and document language/direction synchronization |
-| [home-page.tsx](../../src/features/home/home-page.tsx) | Translation hook and English/Chinese selector |
+| [home-page.tsx](../../src/features/home/home-page.tsx) | Translated Home content |
+| [language-toggle.tsx](../../src/shared/i18n/language-toggle.tsx) | Direct English/Chinese icon toggle |
+| [app-shell.tsx](../../src/app/app-shell.tsx) | Sidebar/footer and mobile-drawer selector placement |
+| [menu-settings.tsx](../../src/app/menu-settings.tsx) | One icon row for direct language/mode toggles and accent settings |
 
 The Home namespace contains headings, role labels, the figure description, and
-language-control labels. Product names remain their official names. Language
+language-control labels and action tooltips. Product names remain their official names. Language
 selection lasts for this session; no browser detector or persistence plugin is
 installed. i18next owns the active language, rather than duplicating it in Zustand.
 
@@ -33,7 +36,7 @@ No network resource loading is needed for these bundled translations.
 
 AppProviders supplies the instance through I18nextProvider, initializes document
 `lang`/`dir`, listens for language changes, and removes that listener on unmount.
-Home uses `useTranslation('home', { i18n })` and the selector calls
+Home uses `useTranslation('home', { i18n })`. The sidebar/drawer toggle calls
 `i18n.changeLanguage()` without reloading or resetting appearance.
 
 ## Adding translated content
@@ -46,7 +49,7 @@ current translations as text; interpolation uses `escapeValue: false` with that
 React text-rendering boundary.
 
 For content requiring embedded React elements, use Trans. For numbers/dates,
-use locale-aware formatting. Adding new languages also requires selector options,
+use locale-aware formatting. Adding more than two languages requires revisiting the direct toggle,
 resource coverage, and layout/keyboard checks.
 
 Shared common labels can use a common namespace. Feature resources can be

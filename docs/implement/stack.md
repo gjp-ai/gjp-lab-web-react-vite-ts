@@ -27,7 +27,7 @@ or production endpoint is added. The API base is independent of the SPA asset ba
 Home retains the compact Layered stack layout, with six layers: Application,
 Interface, State & data, Build, Workspace, and Testing. The added state/data row
 shows React State, Zustand, TanStack Query, Ky, i18next, and react-i18next. Workspace
-includes Husky/lint-staged; Testing includes MSW. A native English/Chinese selector
+includes Husky/lint-staged; Testing includes MSW. A direct English/Chinese toggle in the sidebar/mobile drawer
 changes Home's text without remounting its route or resetting appearance.
 
 Home is translated; existing English chrome, About, dialogs, and the not-found

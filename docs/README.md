@@ -19,12 +19,13 @@ notes explain the code, state, events, configuration, and extension points.
 | Feature | Requirements | Code design |
 | --- | --- | --- |
 | Home diagram | [Home](requirement/home.md) | [Home](implement/home.md) |
+| shadcn/ui showcase (proposed) | [Showcase](requirement/shadcn-ui/README.md) | Not implemented |
 | Sidebar and nested menus | [Menu](requirement/menu.md) | [Menu](implement/menu.md) |
 | Light/dark mode and accents | [Appearance](requirement/theme.md) | [Appearance](implement/theme.md) |
 | Unit/component tests and coverage | Global 90% minimum for all four metrics | [Testing](implement/testing.md) |
 
 The current application is a feature-based browser SPA. It has Home and About
-routes, JSON-driven navigation, three appearance modes, and ten accent presets.
+routes, JSON-driven navigation, two appearance modes, and ten accent presets.
 Home shows six architecture layers and offers English/Chinese text. Counters, technology search, and extra routes
 in the guides are optional exercises and are not installed application features.
 
@@ -44,9 +45,9 @@ in the guides are optional exercises and are not installed application features.
 
 Documentation review date: **2026-10-30**.
 
-Latest automated result for this review: **43 tests across nine suites pass**;
+Latest automated result for this review: **51 tests across ten suites pass**;
 lint, all three TypeScript projects, and the production build pass. Coverage is
-98.82% for lines/statements, 92.99% for branches, and 98.33% for functions.
+99.01% for lines/statements, 93.88% for branches, and 98.38% for functions.
 
 Documentation checks also passed: 22 complete setup snapshots match their files,
 22 complete tutorial modules/test examples pass formatting and type checks in a

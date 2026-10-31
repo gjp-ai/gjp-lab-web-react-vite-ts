@@ -96,15 +96,20 @@ It tests an existing function; no application change is needed.
 
 ```ts
 import { expect, test } from '@jest/globals';
-import { resolveMode } from '@/features/appearance/model/appearance';
+import { accents, parseAppearance } from '@/features/appearance/model/appearance';
 
-test('explicit light mode overrides a dark system preference', () => {
-  expect(resolveMode('light', true)).toBe('light');
+test('dark mode preserves a valid accent', () => {
+  expect(parseAppearance('{"mode":"dark","accent":"rose"}', accents)).toEqual({
+    mode: 'dark',
+    accent: 'rose',
+  });
 });
 
-test('system mode follows the operating system preference', () => {
-  expect(resolveMode('system', true)).toBe('dark');
-  expect(resolveMode('system', false)).toBe('light');
+test('legacy system mode migrates to light without losing the accent', () => {
+  expect(parseAppearance('{"mode":"system","accent":"rose"}', accents)).toEqual({
+    mode: 'light',
+    accent: 'rose',
+  });
 });
 ```
 

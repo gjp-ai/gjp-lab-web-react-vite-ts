@@ -106,7 +106,7 @@ unlayered global rule can still override a utility.
 
 Theme colors such as `bg-primary`, `bg-card`, and `text-muted-foreground` come
 from `@theme inline` and the current light/dark semantic palette in `src/app/styles.css`.
-Appearance controls support light/dark/system mode and ten accent colors. See [Tailwind CSS](tailwindcss.md) for theme details.
+Appearance controls support light/dark mode and ten accent colors. See [Tailwind CSS](tailwindcss.md) for theme details.
 
 ## Basic usage
 

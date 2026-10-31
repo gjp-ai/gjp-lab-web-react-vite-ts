@@ -11,7 +11,7 @@ export const accents = [
   'rose',
 ] as const;
 export type Accent = (typeof accents)[number];
-export type Mode = 'light' | 'dark' | 'system';
+export type Mode = 'light' | 'dark';
 export type Appearance = { readonly mode: Mode; readonly accent: Accent };
 export const appearanceKey = 'gjp-lab.appearance';
 
@@ -27,13 +27,9 @@ export function parseAppearance(raw: string | null, allowed: readonly Accent[]):
   const mode = 'mode' in data ? data.mode : undefined;
   const accent = 'accent' in data ? data.accent : undefined;
   return {
-    mode: mode === 'light' || mode === 'dark' ? mode : 'system',
+    mode: mode === 'dark' ? 'dark' : 'light',
     accent: allowed.find((item) => item === accent) ?? 'mint',
   };
-}
-
-export function resolveMode(mode: Mode, systemDark: boolean): 'light' | 'dark' {
-  return mode === 'system' ? (systemDark ? 'dark' : 'light') : mode;
 }
 
 export function readAppearance(storage: { getItem(key: string): string | null }): Appearance {

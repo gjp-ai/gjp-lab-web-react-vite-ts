@@ -1,210 +1,95 @@
 # Appearance: code design
 
-Source guide for the current implementation. Product choices and reference colors
-are in [theme requirements](../requirement/theme.md). Menu integration is described
-in [menu implementation](menu.md).
+Requirements: [theme.md](../requirement/theme.md). Mode has two explicit values,
+Light and Dark. The menu toggles mode directly; only accent selection opens a dialog.
 
-## 1. Modules and execution order
+## Files and ownership
 
-```text
-features/appearance/model/appearance.ts (types + parser + mode resolver)
-       ├──→ build/appearance-head.ts → Vite HTML transform → document root before paint
-       └──→ AppearanceProvider → document root during React updates
-                      ↓
-               AppearanceSettings → update(next) → localStorage
-                      ↑                            ↓
-                  React context ← storage / device-preference events
-
-app/styles.css reads root data-mode/data-accent → all pages and portaled components
-```
-
-| Source | Main exports or integration |
+| Source | Responsibility |
 | --- | --- |
-| [appearance.ts](../../src/features/appearance/model/appearance.ts) | `accents`, `Accent`, `Mode`, `Appearance`, `appearanceKey`, `parseAppearance`, `resolveMode`, `readAppearance` |
-| [appearance-head.ts](../../build/appearance-head.ts) | `appearanceHeadScript(): string`; Node-side HTML script generator |
-| [vite.config.ts](../../vite.config.ts) | `appearance-before-paint` plugin with `transformIndexHtml` |
-| [appearance-provider.tsx](../../src/features/appearance/components/appearance-provider.tsx) | `AppearanceProvider`, `useAppearance`; React state and external synchronization |
-| [appearance-settings.tsx](../../src/features/appearance/components/appearance-settings.tsx) | `AppearanceSettings({ compact })`; dialog, radio groups, reset, focus return |
-| [main.tsx](../../src/main.tsx) | `StrictMode → AppProviders → RouterProvider` |
-| [app-shell.tsx](../../src/app/app-shell.tsx) | Desktop/mobile placement of settings triggers |
-| [styles.css](../../src/app/styles.css) | Attribute selectors, semantic tokens, palettes, and settings layout |
-| [button.tsx](../../src/shared/ui/button.tsx) | Adds `data-variant` for primary-button state selectors |
+| [appearance.ts](../../src/features/appearance/model/appearance.ts) | Ten accent IDs, types, parser, safe storage read, and legacy migration |
+| [appearance-store.ts](../../src/features/appearance/model/appearance-store.ts) | Provider-owned vanilla Zustand store |
+| [appearance-provider.tsx](../../src/features/appearance/components/appearance-provider.tsx) | Initial state, document tokens, persistence, and cross-tab synchronization |
+| [mode-toggle.tsx](../../src/features/appearance/components/mode-toggle.tsx) | Sun/Moon direct toggle with pressed state and tooltip |
+| [appearance-settings.tsx](../../src/features/appearance/components/appearance-settings.tsx) | Accent-only Base UI dialog, radio choices, reset, and focus return |
+| [menu-settings.tsx](../../src/app/menu-settings.tsx) | Language, mode, and accent controls in menu order |
+| [appearance-head.ts](../../build/appearance-head.ts) | Self-contained startup script embedded by Vite before paint |
+| [styles.css](../../src/app/styles.css) | Semantic theme tokens, accent palettes, focus, and settings layout |
 
-## 2. Preference types and parsing
+## Model and legacy values
 
-`accents` is a readonly tuple of ten stable string IDs. `Accent` is inferred from
-its elements. `Mode` is `'light' | 'dark' | 'system'`. `Appearance` contains readonly
-`mode` and `accent` fields; it stores the user's selection, not the resolved device mode.
+`Mode` is `'light' | 'dark'`. `Appearance` has readonly `mode` and `accent` fields.
+The default is `{ mode: 'light', accent: 'mint' }`. The storage key remains
+`gjp-lab.appearance`; no storage schema rename is required.
 
-| Function | Contract |
-| --- | --- |
-| `parseAppearance(raw, allowed)` | Parse a JSON string/null; return a valid `Appearance`, defaulting each invalid field independently |
-| `readAppearance(storage)` | Read `appearanceKey` through a structural `getItem` interface; catch access errors |
-| `resolveMode(mode, systemDark)` | Return the actual `'light' | 'dark'` mode without mutating the saved preference |
+`parseAppearance(raw, allowed)` catches malformed JSON, checks the result is an
+object, and defaults each invalid field independently. Only `'dark'` selects Dark;
+Light, missing/invalid values, and legacy `'system'` select Light. A valid accent
+survives that migration. `readAppearance(storage)` catches storage read failures.
+There is no `resolveMode` function or device-theme subscription.
 
-`parseAppearance` treats malformed JSON and non-object values as missing fields.
-Mode defaults to System and accent to Mint. The `allowed` argument supplies the
-accent list explicitly so the parser can also execute in the startup script.
+## Startup and provider
 
-The resolver below is a source excerpt from `appearance.ts`, not a standalone module:
+Vite's HTML transform embeds `appearanceHeadScript()` in the document head. The
+script embeds `parseAppearance.toString()` and serialized accent/key constants,
+reads storage safely, and sets `data-mode`, `data-accent`, and `style.colorScheme`.
+It uses `pref.mode` directly and never calls `matchMedia`. Keep the parser
+self-contained so its serialized source has no module dependencies.
 
-```ts
-export function resolveMode(mode: Mode, systemDark: boolean): 'light' | 'dark' {
-  return mode === 'system' ? (systemDark ? 'dark' : 'light') : mode;
-}
-```
+AppearanceProvider creates its store once with a lazy state initializer, reads
+`appearance` through Zustand `useStore`, and exposes `{ appearance, update }` via
+context. Its layout effect applies the same root attributes and native color scheme,
+then updates the theme-color meta tag from the resolved background token.
 
-Storage key: `gjp-lab.appearance`. The serialized object contains only `mode` and
-`accent`. Reset writes System + Mint; it does not need to remove the storage key.
+`update(next)` updates the store first and then attempts localStorage persistence.
+A write failure keeps the current session usable. A storage listener accepts only
+localStorage events for the appearance key or a whole-store clear; it parses the
+new value through the same migration. Unrelated/sessionStorage events are ignored.
+The listener is removed on unmount. No effect follows operating-system brightness.
 
-## 3. Before-paint HTML initialization
+## Footer controls
 
-`appearanceHeadScript()` builds a self-executing JavaScript string. It embeds
-`parseAppearance.toString()`, `resolveMode.toString()`, and JSON-serialized accents/key.
-Vite injects it as a classic inline script using `injectTo: 'head-prepend'`.
+ModeToggle displays Sun in Light and Moon in Dark. Its native Button has the stable
+accessible name “Dark mode”, `aria-pressed` equal to the dark state, and a title /
+Base UI tooltip naming the next action. Clicking calls `update` with the opposite
+mode and the existing accent. It does not mount a dialog or reset language/navigation.
 
-Execution order inside the generated script:
+AppearanceSettings keeps a compact Palette trigger colored by the current primary
+accent. Its dialog contains only ten named native radio options. Selecting a radio
+replaces only `accent`; Reset accent color restores Mint while preserving mode.
+`useId` gives each instance a unique radio-group name. Base UI handles containment,
+Escape, dismissal, and scroll locking. `finalFocus` returns to its trigger, or to a
+visible Accent color trigger in the other responsive layout if the original is hidden.
+The dialog can nest inside the mobile navigation drawer and returns to that drawer.
 
-1. Read local storage inside `try/catch`.
-2. Parse and validate using the embedded parser.
-3. Read `matchMedia('(prefers-color-scheme: dark)').matches`, falling back to false.
-4. Resolve the actual mode.
-5. Set root `data-mode`, `data-accent`, and `style.colorScheme` before styles/app render.
+MenuSettings composes LanguageToggle, ModeToggle, and the accent trigger. Expanded
+sidebar/mobile footer controls share a horizontal row; the 64px rail stacks 44px
+controls. Buttons have accessible labels, keyboard focus, and tooltips.
 
-**Maintenance constraint:** the two serialized functions must remain self-contained
-and cannot gain references to imported helpers, closures, or module-level constants.
-Passing dependencies as arguments prevents those references from being undefined
-in the generated script. Do not move this work to a normal React effect, which
-would run after the initial render.
+## CSS and contrast
 
-A restrictive host CSP must authorize the generated inline script with a hash or
-nonce. Host policy is outside this Vite project; changing the generated script also
-changes any required hash.
+`data-mode` selects light/dark surfaces. Each `data-accent` defines reference, light,
+and dark accent variables; `--primary` selects the shade appropriate to the mode.
+Foreground, muted text, border/input, destructive, primary foreground, hover, and
+pressed tokens remain semantic. Tailwind's dark variant follows the root attribute,
+not a device media query. The Button's `data-variant` state selectors preserve
+opaque primary/hover/pressed backgrounds. Legacy native-button rules exclude
+`data-slot="button"` controls.
 
-## 4. React provider lifecycle
+Accent fieldsets use labeled radio inputs and swatches. Checked and focus-visible
+states are styled through their labels. Palette tests check all twenty mode/accent
+combinations for text, button, muted-text, input-border, and focus contrast.
 
-`AppearanceProvider` creates a vanilla Zustand store once using React state.
-`useStore` subscribes to its appearance value; store actions update it immutably.
-`AppearanceContext` exposes `{ appearance, update }`. `useAppearance()` throws when
-called outside its provider, making missing setup explicit.
+## Validation and extension
 
-| Provider value | Initialization / derivation |
-| --- | --- |
-| `appearance` state | A scoped Zustand store initialized lazily from storage; blocked access uses defaults |
-| `systemDark` state | Lazy `systemIsDark()` reads the media query; failure returns false |
-| `resolved` value | Derived during render using `resolveMode(appearance.mode, systemDark)` |
+Run `pnpm check`, `pnpm test:coverage`, and `pnpm build`. The appearance model tests
+cover malformed storage, independent defaults, legacy System migration, bootstrap
+parity, and contrast. Provider tests cover persistence, blocked storage, cross-tab
+updates, cleanup, and absence of device-theme subscriptions. Application tests cover
+direct toggles, changing icons, no mode popup, independent accent reset, and the
+mobile drawer's nested accent dialog.
 
-A `useLayoutEffect` depending on `resolved` and `appearance.accent` writes document
-attributes before the browser paints the React update. It also reads the computed
-`--background` and updates the existing `meta[name="theme-color"]` element.
-The document root, rather than an app wrapper, is the target so Base UI portals
-inherit the same CSS variables and dark variant.
-
-`update(next)` sets React state first, then attempts `localStorage.setItem`.
-A write error does not undo the current session's selection. Persistence is tied
-to explicit updates rather than an effect that writes on every received state
-change; this prevents tabs from echoing storage events back to each other.
-
-The subscription effect installs two listeners:
-
-- A media-query `change` listener updates `systemDark`. Explicit Light/Dark remains
-  unchanged because `resolveMode` ignores that boolean for those selections.
-- A window `storage` listener checks `event.storageArea`, then accepts the appearance
-  key or `key === null` (storage clear). It parses `event.newValue` and sets state
-  without writing storage. Deletion/clear passes null and restores defaults.
-
-Cleanup removes both listeners, including during StrictMode's effect setup/cleanup
-cycle. Provider state changes do not change router/page keys or remount the Outlet.
-
-## 5. CSS token resolution
-
-| Selector / token | Role |
-| --- | --- |
-| `:root` | Light surface/text defaults and light primary-token resolution |
-| `[data-accent="…"]` | Define `--accent-reference`, `--accent-light`, and `--accent-dark` for one preset |
-| `:root[data-mode="dark"]` | Override neutral surfaces/text and resolve the dark primary token |
-| `--primary` | Selected light/dark action color |
-| `--primary-foreground` | Text on filled actions; white in light mode, dark ink in dark mode |
-| `--primary-hover`, `--primary-pressed` | `color-mix` states: darker light-mode actions, lighter dark-mode actions |
-| `@theme inline` | Map semantic variables into Tailwind utilities such as `bg-primary` |
-| `@custom-variant dark` | Match root `data-mode="dark"` and descendants instead of the OS preference |
-
-Decorative separators and panel outlines use the softer `--border` token.
-Meaningful control boundaries use `--input` (mapped to `border-input`), retaining
-stronger contrast without making the sidebar, footer, and Home rules look heavy.
-The contrast test checks `--input` for control boundaries; focus uses `--primary`.
-
-The accent swatch has its own `data-accent`, so it displays `--accent-reference`
-without changing the app's selected mode/accent. Action shades can differ from
-reference swatches to meet contrast targets. The exact palette is maintained in
-CSS rather than duplicated in TypeScript.
-
-`Button` emits `data-slot="button"` and `data-variant`. CSS uses the default variant
-selector for primary/hover/pressed backgrounds, avoiding translucent primary
-backgrounds that could reduce text contrast. Existing native-button styles also
-use these tokens and continue excluding `data-slot="button"` elements.
-
-## 6. Settings component composition
-
-`AppearanceSettings` reads the provider through `useAppearance`. Its `compact` prop
-controls trigger text and tooltip enablement; each desktop/mobile instance has its
-own Base UI Dialog.Root but shares the same preference state.
-
-The trigger combines Tooltip.Trigger, Dialog.Trigger, and the owned Button through
-Base UI `render` composition. There is no Radix `asChild` wrapper.
-
-`useId()` supplies distinct native radio-group names for each settings instance.
-Mode options come from the local typed `modes` array; accent options map `accents`.
-Each `onChange` spreads the existing preference and replaces just its own field.
-Reset calls `update({ mode: 'system', accent: 'mint' })`.
-
-Native fieldsets, legends, and labeled radio inputs provide selection semantics
-and arrow-key behavior. CSS styles `:has(input:checked)` and
-`:has(input:focus-visible)` on the surrounding label; swatches remain decorative.
-
-Base UI handles focus containment, Escape/outside dismissal, and scroll locking.
-`finalFocus` first checks whether `triggerRef` still has a rendered rectangle. If
-resizing hid it, the callback finds the visible Appearance trigger in the other
-layout. The dialog's overflow is vertical; its width is capped at viewport minus
-24px. Mobile header controls have explicit 44px widths.
-
-## 7. Extension and debugging map
-
-| Change or symptom | Code to inspect/change |
-| --- | --- |
-| Add an accent | Extend `accents` and add all three CSS accent variables; the settings list derives automatically |
-| Change default | Update parser fallback, reset action, CSS fallback colors, and tests together |
-| Rename an accent ID | Plan storage migration or accept fallback to Mint for old values |
-| Wrong theme on initial load | Inspect generated HTML, script ordering, CSP, and serialized-function dependencies |
-| OS overrides explicit Dark/Light | Check `resolveMode` and the custom Tailwind dark variant |
-| Dialog/tooltip has stale colors | Check root attributes and inherited semantic tokens |
-| Tabs overwrite each other repeatedly | Ensure storage events update state without calling `update` |
-| Theme change resets a page | Inspect provider placement and page/router keys; avoid conditional router trees |
-
-## 8. Tests and verification boundaries
-
-[appearance.test.js](../../src/features/appearance/__tests__/appearance.test.js) contains six tests: preference
-round trips, independent invalid-field fallback/storage failure, system resolution,
-startup parity across all inputs, startup API failures, and palette contrast.
-
-Startup tests execute the generated script with Node `vm` and mocked browser
-objects. Contrast tests read CSS token blocks and compute luminance ratios for
-all 20 palettes across page/card/muted surfaces and filled-button text. These test
-base token pairs; they do not render every hover, disabled, or focus composition.
-Keep the token-block format compatible with the test's parser when editing CSS.
-
-```sh
-pnpm test src/features/appearance/__tests__/appearance.test.js
-pnpm check
-pnpm build
-```
-
-The model tests execute the startup script in a Node VM and check palette token
-contrast. Provider tests cover saved preferences, media changes, storage failures,
-cross-tab events, and cleanup. The application suite exercises the real appearance
-dialog's mode, accent, reset, and close actions in jsdom.
-
-These automated tests do not establish visual contrast for every composed state,
-full keyboard/screen-reader behavior, or first-paint behavior in a real browser.
-Those checks remain part of the [appearance checklist](../requirement/theme.md).
-See the [verification summary](../README.md#verification) for current results.
+To add an accent, extend `accents` and its CSS variables together. Keep the parser,
+startup script, tests, [requirements](../requirement/theme.md), and setup snapshots
+aligned. Browser layout, keyboard, and visual checks remain pending because browser
+access was previously restricted; automated DOM tests do not replace those checks.

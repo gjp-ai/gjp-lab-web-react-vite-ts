@@ -3,6 +3,7 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import { appearanceHeadScript } from './build/appearance-head.ts';
+import { technologyVersions } from './build/technology-versions.ts';
 import menuConfig from './src/features/navigation/config/menu.json' with { type: 'json' };
 import { parseMenu } from './src/features/navigation/model/menu-schema.ts';
 
@@ -10,6 +11,7 @@ parseMenu(menuConfig);
 
 export default defineConfig({
   base: '/lab/react/v2/',
+  define: { __TECH_VERSIONS__: JSON.stringify(technologyVersions) },
   plugins: [
     react(),
     tailwindcss(),

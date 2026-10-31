@@ -1,19 +1,15 @@
 import { Dialog } from '@base-ui/react/dialog';
 import { Tooltip } from '@base-ui/react/tooltip';
-import { Monitor, Moon, Palette, Sun, X } from 'lucide-react';
+import { Palette, X } from 'lucide-react';
 import { useId, useRef } from 'react';
-import { accents, type Mode } from '@/features/appearance/model/appearance';
+import { accents } from '@/features/appearance/model/appearance';
 import { Button } from '../../../shared/ui/button';
 import { useAppearance } from './appearance-provider';
 
-const modes = [
-  { id: 'light', label: 'Light', icon: Sun },
-  { id: 'dark', label: 'Dark', icon: Moon },
-  { id: 'system', label: 'System', icon: Monitor },
-] satisfies { id: Mode; label: string; icon: typeof Sun }[];
-
 export function AppearanceSettings({ compact = false }: { readonly compact?: boolean }) {
   const { appearance, update } = useAppearance();
+  const label = 'Accent color';
+  const tooltip = `Accent color: ${appearance.accent}`;
   const id = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
   return (
@@ -29,10 +25,10 @@ export function AppearanceSettings({ compact = false }: { readonly compact?: boo
                   type="button"
                   variant="ghost"
                   className="appearance-trigger"
-                  aria-label="Appearance"
+                  aria-label={label}
                 >
-                  <Palette aria-hidden="true" />
-                  {!compact && <span>Appearance</span>}
+                  <Palette aria-hidden="true" className="text-primary" />
+                  {!compact && <span>{label}</span>}
                 </Button>
               }
             />
@@ -40,7 +36,9 @@ export function AppearanceSettings({ compact = false }: { readonly compact?: boo
         />
         <Tooltip.Portal>
           <Tooltip.Positioner side="right" sideOffset={12} className="menu-tooltip-positioner">
-            <Tooltip.Popup className="menu-tooltip">Appearance</Tooltip.Popup>
+            <Tooltip.Popup lang="en" className="menu-tooltip">
+              {tooltip}
+            </Tooltip.Popup>
           </Tooltip.Positioner>
         </Tooltip.Portal>
       </Tooltip.Root>
@@ -53,20 +51,20 @@ export function AppearanceSettings({ compact = false }: { readonly compact?: boo
             if (triggerRef.current?.getClientRects().length) return triggerRef.current;
             return (
               Array.from(
-                document.querySelectorAll<HTMLButtonElement>('button[aria-label="Appearance"]'),
+                document.querySelectorAll<HTMLButtonElement>(`button[aria-label="${label}"]`),
               ).find((element) => element.getClientRects().length > 0) ?? false
             );
           }}
         >
           <div className="appearance-heading">
-            <Dialog.Title>Appearance</Dialog.Title>
+            <Dialog.Title>{label}</Dialog.Title>
             <Dialog.Close
               render={
                 <Button
                   type="button"
                   variant="ghost"
                   className="sidebar-toggle"
-                  aria-label="Close appearance"
+                  aria-label="Close accent color"
                 >
                   <X aria-hidden="true" />
                 </Button>
@@ -76,24 +74,6 @@ export function AppearanceSettings({ compact = false }: { readonly compact?: boo
           <Dialog.Description className="appearance-description">
             Make this space yours. Changes apply immediately.
           </Dialog.Description>
-          <fieldset className="appearance-fieldset">
-            <legend>Mode</legend>
-            <div className="mode-options">
-              {modes.map(({ id: mode, label, icon: Icon }) => (
-                <label className="appearance-option" key={mode}>
-                  <input
-                    type="radio"
-                    name={`${id}-mode`}
-                    value={mode}
-                    checked={appearance.mode === mode}
-                    onChange={() => update({ ...appearance, mode })}
-                  />
-                  <Icon aria-hidden="true" className="size-4" />
-                  <span>{label}</span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
           <fieldset className="appearance-fieldset">
             <legend>Accent color</legend>
             <div className="accent-options">
@@ -117,9 +97,9 @@ export function AppearanceSettings({ compact = false }: { readonly compact?: boo
               type="button"
               variant="outline"
               className="appearance-reset"
-              onClick={() => update({ mode: 'system', accent: 'mint' })}
+              onClick={() => update({ ...appearance, accent: 'mint' })}
             >
-              Reset appearance
+              Reset accent color
             </Button>
           </div>
         </Dialog.Popup>

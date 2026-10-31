@@ -85,7 +85,7 @@ local and avoid duplicated data sources. Keep Node-only utilities outside `src/`
 - Review incoming component source before replacing local customizations. Preserve
   the upstream notice in [docs/licenses/shadcn-ui.txt](docs/licenses/shadcn-ui.txt).
 - Tailwind CSS 4 uses `@tailwindcss/vite` and CSS-first tokens in `src/app/styles.css`.
-  Preserve light/dark/system modes, the ten accents, and useful custom CSS. Keep utility names complete
+  Preserve light/dark modes, the ten accents, and useful custom CSS. Keep utility names complete
   in source and use `cn` for conditional classes; inspect CSS layers and specificity
   when global styles override utilities. Keep legacy native-button CSS from overriding
   `data-slot="button"` controls.

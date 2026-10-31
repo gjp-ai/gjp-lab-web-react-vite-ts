@@ -390,6 +390,7 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 import { appearanceHeadScript } from './build/appearance-head.ts';
+import { technologyVersions } from './build/technology-versions.ts';
 import menuConfig from './src/features/navigation/config/menu.json' with { type: 'json' };
 import { parseMenu } from './src/features/navigation/model/menu-schema.ts';
 
@@ -397,6 +398,7 @@ parseMenu(menuConfig);
 
 export default defineConfig({
   base: '/lab/react/v2/',
+  define: { __TECH_VERSIONS__: JSON.stringify(technologyVersions) },
   plugins: [
     react(),
     tailwindcss(),
@@ -931,12 +933,29 @@ footer {
     border-right: 1px solid var(--border);
     padding-top: 24px;
   }
-  .sidebar-brand {
-    min-height: 44px;
-    padding: 8px 18px;
+  .sidebar-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 4px;
+    padding: 0 8px 12px;
   }
-  .desktop-sidebar > .sidebar-toggle {
-    margin: 12px 8px;
+  .sidebar-brand {
+    min-width: 0;
+    min-height: 44px;
+    padding: 8px;
+    font-size: 18px;
+  }
+  .sidebar-heading .sidebar-toggle[data-slot="button"] {
+    width: 44px;
+    padding: 0;
+    flex-shrink: 0;
+    border-radius: 10px;
+    color: var(--muted-foreground);
+  }
+  .sidebar-collapsed .sidebar-heading {
+    flex-direction: column;
+    padding-inline: 10px;
   }
   .sidebar-scroll {
     min-height: 0;
@@ -1029,7 +1048,9 @@ footer {
   --primary-hover: color-mix(in srgb, var(--primary), #ffffff 12%);
   --primary-pressed: color-mix(in srgb, var(--primary), #ffffff 22%);
 }
-.sidebar-appearance {
+.sidebar-settings {
+  display: grid;
+  gap: 6px;
   margin-top: auto;
   padding: 12px 8px;
   border-top: 1px solid var(--border);
@@ -1087,14 +1108,11 @@ footer {
   font-weight: 650;
   margin-bottom: 10px;
 }
-.mode-options,
 .accent-options {
   display: grid;
   gap: 8px;
 }
-.mode-options {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
+
 .accent-options {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
@@ -1153,9 +1171,7 @@ footer {
   .appearance-dialog {
     padding: 16px;
   }
-  .mode-options {
-    grid-template-columns: 1fr;
-  }
+
   .mobile-header {
     padding-inline: 16px;
     gap: 8px;
@@ -1182,103 +1198,156 @@ footer {
   justify-content: center;
 }
 
-/* Home: the Layered stack design. */
+/* Home: Option 3, compact layers. */
 .content-column:has(.stack-home) {
-  width: min(1440px, calc(100% - 64px));
+  width: min(1600px, calc(100% - 48px));
 }
 .content-column:has(.stack-home) > footer {
-  margin-top: 24px;
-  padding-block: 18px;
+  margin-top: 20px;
+  padding-block: 16px;
   font-size: 13px;
 }
 .stack-home {
-  padding-block: 32px 4px;
+  padding-block: 24px 4px;
 }
 .stack-home-heading {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 .stack-home-heading .eyebrow {
-  margin: 0 0 10px;
-  color: var(--muted-foreground);
-  font-size: 13px;
-  font-weight: 500;
+  margin: 0;
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 600;
   letter-spacing: 0.12em;
 }
 .stack-home-heading h1 {
-  margin: 0;
-  font-size: clamp(30px, 3.3vw, 44px);
+  margin: 10px 0 0;
+  font-size: clamp(30px, 3.3vw, 46px);
   line-height: 1.18;
   letter-spacing: -0.045em;
-  font-weight: 550;
+  font-weight: 650;
 }
 .stack-home-intro {
-  margin: 12px 0 0;
+  margin: 8px 0 0;
   color: var(--muted-foreground);
-  font-size: 18px;
-  line-height: 1.6;
+  font-size: 16px;
+  line-height: 1.5;
 }
 .stack-layers {
+  display: grid;
+  gap: 10px;
   margin: 0;
   container-type: inline-size;
 }
 .stack-layer {
   display: grid;
-  grid-template-columns: 160px minmax(0, 1fr);
-  align-items: start;
-  gap: 28px;
-  padding-block: 20px;
-  border-top: 1px solid var(--border);
+  grid-template-columns: 200px minmax(0, 1fr);
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--card);
 }
 .stack-layer-label {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 14px;
   margin: 0;
-  padding-top: 7px;
-  font-size: 16px;
-  line-height: 1.5;
-  font-weight: 500;
-  color: var(--muted-foreground);
-  letter-spacing: 0;
+  padding: 20px;
+  background: color-mix(in srgb, var(--primary) 6%, var(--card));
+  color: var(--foreground);
+  font-size: 19px;
+  line-height: 1.3;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
 }
 .stack-layer-label > span {
-  font-size: 13px;
-  font-family: ui-monospace, monospace;
   color: var(--primary);
+  font-size: 30px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.06em;
 }
 .stack-application,
 .stack-interface,
-.stack-workspace {
+.stack-data,
+.stack-workspace,
+.stack-testing {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+  gap: 8px;
   list-style: none;
-  padding: 0;
+  padding: 12px;
   margin: 0;
   min-width: 0;
+  align-items: stretch;
+}
+.stack-application {
+  grid-template-columns: repeat(2, minmax(0, 260px));
 }
 .stack-technology {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
+  gap: 12px;
   min-width: 0;
-  min-height: 36px;
-  font-size: 18px;
-  line-height: 1.5;
+  min-height: 74px;
+  padding: 12px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--foreground) 3%, var(--card));
+  font-size: 19px;
+  line-height: 1.3;
+  font-weight: 550;
 }
-.stack-language > svg {
-  width: 20px;
-  height: 20px;
-  color: var(--primary);
-}
-.stack-technology > svg,
-.stack-build-source > svg {
-  width: 22px;
-  height: 22px;
+
+.stack-brand-icon {
+  display: grid;
+  place-items: center;
   flex-shrink: 0;
-  color: var(--primary);
-  stroke-width: 1.7;
+  width: 48px;
+  height: 48px;
+  border-radius: 8px;
+  background: #fff;
+  color: #17202e;
+  font-size: 20px;
+  font-weight: 600;
 }
-.stack-technology > span {
+.stack-brand-icon img {
+  width: 36px;
+  height: 36px;
+  object-fit: contain;
+}
+.stack-technology,
+.stack-vite-link {
+  color: var(--foreground);
+  text-decoration: none;
+}
+.stack-technology {
+  height: 100%;
+}
+.stack-technology:hover,
+.stack-vite-link:hover {
+  background: color-mix(in srgb, var(--primary) 9%, var(--card));
+}
+.stack-technology:focus-visible,
+.stack-vite a:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+.stack-build > li > .stack-technology {
+  width: 100%;
+}
+.stack-technology-copy {
+  display: grid;
+  min-width: 0;
+  gap: 5px;
   overflow-wrap: anywhere;
+}
+.stack-technology-description {
+  color: var(--muted-foreground);
+  font-size: 13px;
+  line-height: 1.45;
+  font-weight: 400;
 }
 .stack-version {
   font-size: 13px;
@@ -1286,204 +1355,229 @@ footer {
   font-weight: 400;
   color: var(--muted-foreground);
 }
-.stack-application {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 16px 32px;
-  padding: 12px 18px;
-  background: color-mix(in srgb, var(--primary) 5%, var(--card));
-  border-radius: 10px;
+.stack-data {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
-.stack-application .stack-technology {
-  font-size: 22px;
-  font-weight: 500;
-}
-.stack-interface {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 260px));
-  gap: 8px 32px;
-}
-.stack-workspace {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px 32px;
+.stack-testing {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 .stack-build {
   list-style: none;
   margin: 0;
-  padding: 0;
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 18px;
+  padding: 12px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.8fr) minmax(0, 1.2fr);
+  gap: 12px;
   min-width: 0;
 }
 .stack-build > li {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 36px;
-  font-size: 18px;
+  display: grid;
+  min-width: 0;
+  font-size: 19px;
+  font-weight: 550;
+  overflow-wrap: anywhere;
 }
-.stack-build-engine,
-.stack-build-output {
-  column-gap: 18px;
+.stack-build > li:first-child > .stack-technology {
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+  border: 1px solid var(--border);
 }
-.stack-flow-arrow {
-  width: 15px;
-  height: 15px;
+.stack-build > li:first-child .stack-technology-copy {
+  justify-items: center;
+}
+.stack-build > .stack-build-engine,
+.stack-build > .stack-build-output {
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: stretch;
+  gap: 12px;
+}
+.stack-vite,
+.stack-output-card {
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--foreground) 3%, var(--card));
+}
+.stack-flow-arrow,
+.stack-tool-arrow {
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
   color: var(--muted-foreground);
+  align-self: center;
+  justify-self: center;
 }
-.stack-vite {
-  min-width: 184px;
-  padding: 12px 16px;
+.stack-vite-link {
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+.stack-vite strong {
+  font-size: 19px;
+  font-weight: 550;
+}
+.stack-vite-tools {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 16px minmax(0, 1fr);
+  align-items: stretch;
+  gap: 8px;
+  margin-top: 12px;
+}
+.stack-build-tool {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  min-width: 0;
+  min-height: 92px;
+  padding: 10px 8px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--card);
-}
-.stack-vite > div {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.stack-vite > div > svg {
-  width: 20px;
-  height: 20px;
-  color: var(--primary);
-}
-.stack-vite strong {
-  font-size: 18px;
-  font-weight: 550;
-}
-.stack-vite p {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 8px 0 0;
+  color: var(--foreground);
+  text-decoration: none;
+  text-align: center;
   font-size: 15px;
+  line-height: 1.4;
+}
+.stack-build-tool:hover {
+  background: color-mix(in srgb, var(--primary) 9%, var(--card));
+}
+.stack-build-tool small {
   color: var(--muted-foreground);
+  font-size: 12px;
+  font-weight: 400;
 }
-.stack-vite p > svg {
-  width: 12px;
-  height: 12px;
+.stack-output-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
 }
-.stack-build-output small {
-  display: block;
-  margin-top: 5px;
+.stack-output-formats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+.stack-output-formats > li {
+  border-radius: 6px;
+  padding: 6px 8px;
+  background: color-mix(in srgb, var(--primary) 7%, var(--card));
+  color: var(--foreground);
   font-size: 13px;
-  color: var(--muted-foreground);
+  font-weight: 500;
 }
-.stack-application .stack-technology > svg {
-  width: 24px;
-  height: 24px;
+@container (max-width: 850px) {
+  .stack-build {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .stack-build > .stack-build-engine,
+  .stack-build > .stack-build-output {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+  .stack-build > li:first-child > .stack-technology {
+    flex-direction: row;
+    text-align: start;
+  }
+  .stack-build > li:first-child .stack-technology-copy {
+    justify-items: start;
+  }
+  .stack-flow-arrow {
+    transform: rotate(90deg);
+  }
+}
+@container (max-width: 1050px) {
+  .stack-layer {
+    grid-template-columns: 170px minmax(0, 1fr);
+  }
+  .stack-layer-label {
+    padding: 16px;
+    font-size: 18px;
+  }
+  .stack-testing,
+  .stack-data {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 @container (max-width: 650px) {
   .stack-layer {
     grid-template-columns: 1fr;
-    gap: 12px;
-    padding-block: 18px;
   }
   .stack-layer-label {
-    padding-top: 0;
+    padding: 12px 16px;
+  }
+  .stack-layer-label > span {
+    font-size: 24px;
   }
   .stack-application {
-    padding: 12px 14px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 @container (max-width: 400px) {
-  .stack-interface {
+  .stack-application,
+  .stack-interface,
+  .stack-workspace,
+  .stack-testing,
+  .stack-data {
     grid-template-columns: 1fr;
-    gap: 8px;
   }
-  .stack-application {
-    gap: 12px;
+  .stack-vite-tools {
+    grid-template-columns: minmax(0, 1fr);
   }
-  .stack-application .stack-technology {
-    font-size: 20px;
-  }
-  .stack-workspace {
-    gap: 8px 20px;
-  }
-  .stack-build {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-  }
-  .stack-build > li {
-    min-height: 0;
-  }
-  .stack-build-engine,
-  .stack-build-output {
-    flex-direction: column;
-    align-items: stretch;
-  }
-  .stack-build > .stack-build-engine,
-  .stack-build > .stack-build-output {
-    align-items: stretch;
-    gap: 10px;
-  }
-  .stack-flow-arrow {
+  .stack-tool-arrow {
     transform: rotate(90deg);
-    align-self: center;
-  }
-  .stack-build-output > span {
-    padding-block: 5px;
   }
 }
-
 @media (max-width: 600px) {
   .content-column:has(.stack-home) {
     width: calc(100% - 32px);
   }
   .stack-home {
-    padding-top: 24px;
-  }
-  .stack-home-intro {
-    font-size: 16px;
+    padding-top: 20px;
   }
 }
 
-.stack-testing {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px 32px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
+.drawer-settings {
+  margin-top: 16px;
+  padding: 12px 8px;
+  border-top: 1px solid var(--border);
 }
-.stack-testing > li {
-  display: grid;
+
+/* Menu footer: language, mode, accent. */
+.menu-settings {
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
   gap: 6px;
 }
-.stack-test-role {
-  color: var(--muted-foreground);
-  font-size: 14px;
+.menu-settings .appearance-trigger[data-slot="button"] {
+  width: 44px;
+  padding: 0;
+  justify-content: center;
+  border-radius: 8px;
 }
-
-.stack-heading-top {
+.sidebar-collapsed .menu-settings {
+  flex-direction: column;
+}
+.menu-drawer {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  flex-direction: column;
 }
-.stack-language {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: var(--muted-foreground);
-  font-size: 15px;
-}
-.stack-language select {
-  max-width: 100%;
-  border: 1px solid var(--input);
-  border-radius: 6px;
-  padding: 6px 10px;
-  color: var(--foreground);
-  background: var(--background);
+.drawer-settings {
+  margin-top: auto;
+  padding-top: 12px;
 }
 ```
 
@@ -1754,70 +1848,86 @@ some imports refer to files created later in the step.
 
 ### Create Home and About
 
+Copy [build/technology-versions.ts](../build/technology-versions.ts) before loading
+Vite or Jest. Both configurations expose the same public versions: exact manifest
+pins, Vite’s installed Rolldown dependency, and the actual Node.js/pnpm tools
+running development or the build. Oxc is labeled as bundled with Rolldown.
+
+First copy the official logo/destination catalogue from
+[src/features/home/technologies.ts](../src/features/home/technologies.ts).
+See [logo sources](licenses/technology-logos.md) for the published image URLs.
+
 Create `src/features/home/home-page.tsx`:
 
 ```tsx
-import {
-  ArrowRight,
-  Atom,
-  ChartNoAxesColumn,
-  CheckCheck,
-  Component,
-  Database,
-  Feather,
-  FileCode2,
-  FlaskConical,
-  GitBranch,
-  Globe,
-  Languages,
-  Layers3,
-  type LucideIcon,
-  Navigation,
-  Network,
-  Package,
-  Store,
-  Terminal,
-  TestTubeDiagonal,
-  Wind,
-  Zap,
-} from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { i18n } from '@/shared/i18n/i18n';
+import { buildToolVersions, type TechnologyId, technologies } from './technologies';
 
-const applicationStack = [
-  { name: 'React', version: '19', icon: Atom },
-  { name: 'TanStack Router', version: '1', icon: Navigation },
-] as const;
-
+const applicationStack = [{ technology: 'react' }, { technology: 'router' }] as const;
 const interfaceStack = [
-  { name: 'shadcn/ui', icon: Component },
-  { name: 'Base UI', version: '1', icon: Layers3 },
-  { name: 'Tailwind CSS', version: '4', icon: Wind },
-  { name: 'Lucide React', version: '1', icon: Feather },
+  { technology: 'shadcn' },
+  { technology: 'base' },
+  { technology: 'tailwind' },
+  { technology: 'lucide' },
+] as const;
+const workspace = [
+  { technology: 'node' },
+  { technology: 'pnpm' },
+  { technology: 'biome' },
+  { technology: 'husky' },
+  { technology: 'lintStaged' },
 ] as const;
 
-const workspace = [
-  { name: 'Node.js', version: '24+', icon: Terminal },
-  { name: 'pnpm', version: '12+', icon: Package },
-  { name: 'Biome', version: '2', icon: CheckCheck },
-  { name: 'Husky', version: '9', icon: GitBranch },
-  { name: 'lint-staged', version: '17', icon: CheckCheck },
-] as const;
+function BrandIcon({ technology }: { readonly technology: TechnologyId }) {
+  const brand = technologies[technology];
+  const [failed, setFailed] = useState(false);
+  return (
+    <span className="stack-brand-icon" aria-hidden="true">
+      {'logo' in brand && !failed ? (
+        <img
+          src={brand.logo}
+          alt=""
+          width="36"
+          height="36"
+          decoding="async"
+          referrerPolicy="no-referrer"
+          onError={() => setFailed(true)}
+        />
+      ) : (
+        <span>{'emoji' in brand ? brand.emoji : brand.name.slice(0, 2)}</span>
+      )}
+    </span>
+  );
+}
 
 function Technology({
+  technology,
   name,
-  version,
-  icon: Icon,
+  role,
 }: {
-  readonly name: string;
-  readonly version?: string;
-  readonly icon: LucideIcon;
+  readonly technology: TechnologyId;
+  readonly name?: string;
+  readonly role?: string | undefined;
 }) {
+  const brand = technologies[technology];
+  const version = 'version' in brand ? brand.version : undefined;
+  const { t } = useTranslation('home', { i18n });
   return (
-    <li className="stack-technology">
-      <Icon aria-hidden="true" />
-      <span>{name}</span>
-      {version && <small className="stack-version">{version}</small>}
+    <li>
+      <a className="stack-technology" href={brand.href} target="_blank" rel="noopener noreferrer">
+        <BrandIcon technology={technology} />
+        <span className="stack-technology-copy">
+          <span>{name ?? brand.name}</span>
+          <small className="stack-version">{version ?? t('localSource')}</small>
+          <small className="stack-technology-description">
+            {role ?? t(`technologyDescriptions.${technology}`)}
+          </small>
+        </span>
+        <span className="sr-only">{t('opensNewTab')}</span>
+      </a>
     </li>
   );
 }
@@ -1827,28 +1937,9 @@ export default function HomePage() {
   return (
     <section className="stack-home" aria-labelledby="stack-home-title">
       <header className="stack-home-heading">
-        <div className="stack-heading-top">
-          <p className="eyebrow" lang="en">
-            GJP LAB / FOUNDATION
-          </p>
-          <label className="stack-language">
-            <Languages aria-hidden="true" />
-            <select
-              aria-label={t('language')}
-              value={i18n.resolvedLanguage ?? 'en'}
-              onChange={(event) => {
-                void i18n.changeLanguage(event.currentTarget.value);
-              }}
-            >
-              <option value="en" lang="en">
-                English
-              </option>
-              <option value="zh" lang="zh">
-                中文
-              </option>
-            </select>
-          </label>
-        </div>
+        <p className="eyebrow" lang="en">
+          GJP LAB / FOUNDATION
+        </p>
         <h1 id="stack-home-title">{t('title')}</h1>
         <p className="stack-home-intro">{t('intro')}</p>
       </header>
@@ -1864,7 +1955,7 @@ export default function HomePage() {
           </h2>
           <ul className="stack-application">
             {applicationStack.map((technology) => (
-              <Technology key={technology.name} {...technology} />
+              <Technology key={technology.technology} {...technology} />
             ))}
           </ul>
         </section>
@@ -1875,7 +1966,7 @@ export default function HomePage() {
           </h2>
           <ul className="stack-interface">
             {interfaceStack.map((technology) => (
-              <Technology key={technology.name} {...technology} />
+              <Technology key={technology.technology} {...technology} />
             ))}
           </ul>
         </section>
@@ -1884,33 +1975,13 @@ export default function HomePage() {
           <h2 id="data-title" className="stack-layer-label">
             <span aria-hidden="true">03</span> {t('data')}
           </h2>
-          <ul className="stack-testing">
-            <li>
-              <span className="stack-test-role">{t('clientState')}</span>
-              <ul className="stack-workspace">
-                <Technology name="React State" icon={Atom} />
-                <Technology name="Zustand" version="5" icon={Store} />
-              </ul>
-            </li>
-            <li>
-              <span className="stack-test-role">{t('serverState')}</span>
-              <ul className="stack-workspace">
-                <Technology name="TanStack Query" version="5" icon={Database} />
-              </ul>
-            </li>
-            <li>
-              <span className="stack-test-role">{t('http')}</span>
-              <ul className="stack-workspace">
-                <Technology name="Ky" version="2" icon={Network} />
-              </ul>
-            </li>
-            <li>
-              <span className="stack-test-role">{t('internationalization')}</span>
-              <ul className="stack-workspace">
-                <Technology name="i18next" version="26" icon={Globe} />
-                <Technology name="react-i18next" version="17" icon={Languages} />
-              </ul>
-            </li>
+          <ul className="stack-data">
+            <Technology technology="react" name="React State" role={t('clientState')} />
+            <Technology technology="zustand" />
+            <Technology technology="query" />
+            <Technology technology="ky" />
+            <Technology technology="i18next" />
+            <Technology technology="reactI18next" />
           </ul>
         </section>
 
@@ -1919,33 +1990,69 @@ export default function HomePage() {
             <span aria-hidden="true">04</span> {t('build')}
           </h2>
           <ol className="stack-build" aria-label={t('pipeline')}>
-            <li className="stack-build-source">
-              <FileCode2 aria-hidden="true" />
-              <span>TypeScript</span>
-              <small className="stack-version">7</small>
-            </li>
+            <Technology technology="typescript" />
             <li className="stack-build-engine">
               <ArrowRight className="stack-flow-arrow" aria-hidden="true" />
               <div className="stack-vite">
-                <div>
-                  <Zap aria-hidden="true" />
-                  <strong>Vite</strong>
-                  <small className="stack-version">8</small>
+                <a
+                  className="stack-vite-link"
+                  href={technologies.vite.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <BrandIcon technology="vite" />
+                  <span className="stack-technology-copy">
+                    <strong>Vite</strong>
+                    <small className="stack-version">{technologies.vite.version}</small>
+                    <small className="stack-technology-description">{t('buildEngine')}</small>
+                  </span>
+                  <span className="sr-only">{t('opensNewTab')}</span>
+                </a>
+                <div className="stack-vite-tools">
+                  <a
+                    className="stack-build-tool"
+                    href="https://oxc.rs"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={t('bundled', { version: buildToolVersions.rolldown })}
+                  >
+                    <span>Oxc</span>
+                    <small className="stack-version">{t('bundledLabel')}</small>
+                    <span className="sr-only">
+                      {t('bundled', { version: buildToolVersions.rolldown })}
+                    </span>
+                    <small>{t('transform')}</small>
+                    <span className="sr-only">{t('opensNewTab')}</span>
+                  </a>
+                  <ArrowRight className="stack-tool-arrow" aria-hidden="true" />
+                  <a
+                    className="stack-build-tool"
+                    href="https://rolldown.rs"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <span>Rolldown</span>
+                    <small className="stack-version">{buildToolVersions.rolldown}</small>
+                    <small>{t('bundle')}</small>
+                    <span className="sr-only">{t('opensNewTab')}</span>
+                  </a>
                 </div>
-                <p>
-                  <span>Oxc</span>
-                  <ArrowRight aria-hidden="true" />
-                  <span>Rolldown</span>
-                </p>
                 <span className="sr-only">Oxc transforms source; Rolldown bundles it.</span>
               </div>
             </li>
             <li className="stack-build-output">
               <ArrowRight className="stack-flow-arrow" aria-hidden="true" />
-              <span>
-                {t('assets')}
-                <small>HTML · CSS · JS</small>
-              </span>
+              <div className="stack-output-card">
+                <strong>{t('assets')}</strong>
+                <ul className="stack-output-formats" aria-label={t('assetFormats')}>
+                  <li>HTML</li>
+                  <li>CSS</li>
+                  <li>JS</li>
+                </ul>
+                <small className="sr-only">
+                  {t('webStandards')} · {t('browserOutput')}
+                </small>
+              </div>
             </li>
           </ol>
         </section>
@@ -1956,7 +2063,7 @@ export default function HomePage() {
           </h2>
           <ul className="stack-workspace">
             {workspace.map((technology) => (
-              <Technology key={technology.name} {...technology} />
+              <Technology key={technology.technology} {...technology} />
             ))}
           </ul>
         </section>
@@ -1966,34 +2073,9 @@ export default function HomePage() {
             <span aria-hidden="true">06</span> {t('testing')}
           </h2>
           <ul className="stack-testing">
-            <li>
-              <span className="stack-test-role">{t('unitTesting')}</span>
-              <span className="stack-technology">
-                <FlaskConical aria-hidden="true" />
-                Jest<small className="stack-version">30</small>
-              </span>
-            </li>
-            <li>
-              <span className="stack-test-role">{t('componentTesting')}</span>
-              <span className="stack-technology">
-                <TestTubeDiagonal aria-hidden="true" />
-                React Testing Library<small className="stack-version">16</small>
-              </span>
-            </li>
-            <li>
-              <span className="stack-test-role">{t('coverage')}</span>
-              <span className="stack-technology">
-                <ChartNoAxesColumn aria-hidden="true" />
-                Jest
-              </span>
-            </li>
-            <li>
-              <span className="stack-test-role">{t('mocking')}</span>
-              <span className="stack-technology">
-                <Network aria-hidden="true" />
-                MSW<small className="stack-version">3</small>
-              </span>
-            </li>
+            <Technology technology="jest" role={t('testingAndCoverage')} />
+            <Technology technology="testingLibrary" role={t('componentTesting')} />
+            <Technology technology="msw" role={t('mocking')} />
           </ul>
         </section>
       </figure>
@@ -2104,9 +2186,9 @@ import menuConfig from '@/features/navigation/config/menu.json';
 import { activeGroups, parseMenu } from '@/features/navigation/model/menu-schema';
 import { cn } from '@/shared/lib/utils';
 import type { MenuTarget } from '@/shared/routing/route-paths';
-import { AppearanceSettings } from '../features/appearance/components/appearance-settings';
 import { MenuNavigation } from '../features/navigation/components/menu-navigation';
 import { Button } from '../shared/ui/button';
+import { MenuSettings } from './menu-settings';
 
 const menu = parseMenu(menuConfig);
 const preferenceKey = 'gjp-lab.sidebar.collapsed';
@@ -2219,31 +2301,49 @@ export function AppShell() {
           Skip to content
         </a>
         <aside lang="en" ref={desktopRef} className="desktop-sidebar" aria-label="Sidebar">
-          <Link className="brand sidebar-brand" to="/" aria-label="GJP Lab home">
-            {brand}
-          </Link>
-          <Button
-            ref={toggleRef}
-            type="button"
-            variant="ghost"
-            className="sidebar-toggle"
-            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            aria-expanded={!collapsed}
-            aria-controls="desktop-menu"
-            onClick={() => setCollapsed((value) => !value)}
-          >
-            {collapsed ? (
-              <PanelLeftOpen aria-hidden="true" />
-            ) : (
-              <PanelLeftClose aria-hidden="true" />
-            )}
-            {!collapsed && <span>Collapse menu</span>}
-          </Button>
+          <div className="sidebar-heading">
+            <Link className="brand sidebar-brand" to="/" aria-label="GJP Lab home">
+              {brand}
+            </Link>
+            <Tooltip.Root>
+              <Tooltip.Trigger
+                render={
+                  <Button
+                    ref={toggleRef}
+                    type="button"
+                    variant="ghost"
+                    className="sidebar-toggle"
+                    aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                    aria-expanded={!collapsed}
+                    aria-controls="desktop-menu"
+                    onClick={() => setCollapsed((value) => !value)}
+                  >
+                    {collapsed ? (
+                      <PanelLeftOpen aria-hidden="true" />
+                    ) : (
+                      <PanelLeftClose aria-hidden="true" />
+                    )}
+                  </Button>
+                }
+              />
+              <Tooltip.Portal>
+                <Tooltip.Positioner
+                  side="right"
+                  sideOffset={12}
+                  className="menu-tooltip-positioner"
+                >
+                  <Tooltip.Popup lang="en" className="menu-tooltip">
+                    {collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                  </Tooltip.Popup>
+                </Tooltip.Positioner>
+              </Tooltip.Portal>
+            </Tooltip.Root>
+          </div>
           <div id="desktop-menu" className="sidebar-scroll">
             <MenuNavigation {...navigation} collapsed={collapsed} />
           </div>
-          <div className="sidebar-appearance">
-            <AppearanceSettings compact={collapsed} />
+          <div className="sidebar-settings">
+            <MenuSettings />
           </div>
         </aside>
         <Dialog.Root
@@ -2258,7 +2358,6 @@ export function AppShell() {
               {brand}
             </Link>
             <div className="mobile-actions">
-              <AppearanceSettings compact />
               <Dialog.Trigger
                 render={
                   <Button
@@ -2318,6 +2417,9 @@ export function AppShell() {
                 GJP Lab home
               </Link>
               <MenuNavigation {...navigation} collapsed={false} />
+              <div className="drawer-settings">
+                <MenuSettings />
+              </div>
             </Dialog.Popup>
           </Dialog.Portal>
         </Dialog.Root>
@@ -2405,6 +2507,9 @@ Before creating the entry, add the installed stack modules at their linked paths
 - [src/app/mocks/browser.ts](../src/app/mocks/browser.ts)
 - [src/shared/api/http.ts](../src/shared/api/http.ts)
 - [src/shared/i18n/i18n.ts](../src/shared/i18n/i18n.ts)
+- [src/shared/i18n/language-toggle.tsx](../src/shared/i18n/language-toggle.tsx)
+- [src/app/menu-settings.tsx](../src/app/menu-settings.tsx)
+- [src/features/appearance/components/mode-toggle.tsx](../src/features/appearance/components/mode-toggle.tsx)
 - [src/features/appearance/model/appearance-store.ts](../src/features/appearance/model/appearance-store.ts)
 - [scripts/prepare.js](../scripts/prepare.js)
 - [lint-staged.config.js](../lint-staged.config.js)
@@ -2543,9 +2648,12 @@ existing features and optional exercises clearly labeled.
 Create `jest.config.js`:
 
 ```js
+import { technologyVersions } from './build/technology-versions.ts';
+
 /** @type {import('jest').Config} */
 export default {
   testEnvironment: 'node',
+  globals: { __TECH_VERSIONS__: technologyVersions },
   testMatch: [
     '<rootDir>/src/**/__tests__/**/*.test.{js,ts,tsx}',
     '<rootDir>/tests/**/*.test.{js,ts,tsx}',

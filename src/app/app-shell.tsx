@@ -7,9 +7,9 @@ import menuConfig from '@/features/navigation/config/menu.json';
 import { activeGroups, parseMenu } from '@/features/navigation/model/menu-schema';
 import { cn } from '@/shared/lib/utils';
 import type { MenuTarget } from '@/shared/routing/route-paths';
-import { AppearanceSettings } from '../features/appearance/components/appearance-settings';
 import { MenuNavigation } from '../features/navigation/components/menu-navigation';
 import { Button } from '../shared/ui/button';
+import { MenuSettings } from './menu-settings';
 
 const menu = parseMenu(menuConfig);
 const preferenceKey = 'gjp-lab.sidebar.collapsed';
@@ -122,31 +122,49 @@ export function AppShell() {
           Skip to content
         </a>
         <aside lang="en" ref={desktopRef} className="desktop-sidebar" aria-label="Sidebar">
-          <Link className="brand sidebar-brand" to="/" aria-label="GJP Lab home">
-            {brand}
-          </Link>
-          <Button
-            ref={toggleRef}
-            type="button"
-            variant="ghost"
-            className="sidebar-toggle"
-            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            aria-expanded={!collapsed}
-            aria-controls="desktop-menu"
-            onClick={() => setCollapsed((value) => !value)}
-          >
-            {collapsed ? (
-              <PanelLeftOpen aria-hidden="true" />
-            ) : (
-              <PanelLeftClose aria-hidden="true" />
-            )}
-            {!collapsed && <span>Collapse menu</span>}
-          </Button>
+          <div className="sidebar-heading">
+            <Link className="brand sidebar-brand" to="/" aria-label="GJP Lab home">
+              {brand}
+            </Link>
+            <Tooltip.Root>
+              <Tooltip.Trigger
+                render={
+                  <Button
+                    ref={toggleRef}
+                    type="button"
+                    variant="ghost"
+                    className="sidebar-toggle"
+                    aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                    aria-expanded={!collapsed}
+                    aria-controls="desktop-menu"
+                    onClick={() => setCollapsed((value) => !value)}
+                  >
+                    {collapsed ? (
+                      <PanelLeftOpen aria-hidden="true" />
+                    ) : (
+                      <PanelLeftClose aria-hidden="true" />
+                    )}
+                  </Button>
+                }
+              />
+              <Tooltip.Portal>
+                <Tooltip.Positioner
+                  side="right"
+                  sideOffset={12}
+                  className="menu-tooltip-positioner"
+                >
+                  <Tooltip.Popup lang="en" className="menu-tooltip">
+                    {collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+                  </Tooltip.Popup>
+                </Tooltip.Positioner>
+              </Tooltip.Portal>
+            </Tooltip.Root>
+          </div>
           <div id="desktop-menu" className="sidebar-scroll">
             <MenuNavigation {...navigation} collapsed={collapsed} />
           </div>
-          <div className="sidebar-appearance">
-            <AppearanceSettings compact={collapsed} />
+          <div className="sidebar-settings">
+            <MenuSettings />
           </div>
         </aside>
         <Dialog.Root
@@ -161,7 +179,6 @@ export function AppShell() {
               {brand}
             </Link>
             <div className="mobile-actions">
-              <AppearanceSettings compact />
               <Dialog.Trigger
                 render={
                   <Button
@@ -221,6 +238,9 @@ export function AppShell() {
                 GJP Lab home
               </Link>
               <MenuNavigation {...navigation} collapsed={false} />
+              <div className="drawer-settings">
+                <MenuSettings />
+              </div>
             </Dialog.Popup>
           </Dialog.Portal>
         </Dialog.Root>

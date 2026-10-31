@@ -113,14 +113,16 @@ Optional exercise components are separate from the existing source listed above.
   headings nested inside CardTitle. Use `Link` with `buttonVariants` for
   button-styled navigation. Review local customizations before replacing UI source.
 - Tailwind CSS 4 uses the Vite plugin and CSS-first tokens in `src/app/styles.css`.
-  Reuse theme colors and preserve useful custom CSS; the app supports light/dark/system modes and ten accent colors.
+  Reuse theme colors and preserve useful custom CSS; the app supports light/dark modes and ten accent colors.
 - Import Lucide icons by name. Hide decorative icons and give icon-only controls
   accessible labels. Verify keyboard focus and narrow layouts after UI changes.
 
 ## Home page
 
-Home uses the Layered stack design: compact application, interface, state/data, build,
-workspace, and testing sections. See the [Home requirements](docs/requirement/home.md) and
+Home uses the Compact layers design (Option 3): numbered category panels and
+technology tiles for application, interface, state/data, build,
+workspace, and testing sections. Technology tiles use official brand marks and open
+their official sites in new tabs. See the [Home requirements](docs/requirement/home.md) and
 [Home code design](docs/implement/home.md) for content and layout details.
 
 ## Menu configuration
@@ -185,7 +187,8 @@ statements, branches, functions, and lines. Build does not run tests automatical
 
 See [Application stack integration](docs/implement/stack.md) for provider order,
 Zustand ownership, HTTP defaults, development mocking, and hook activation.
-Home has an English/Chinese selector; other pages keep their English content.
+The sidebar and mobile navigation drawer contain an English/Chinese toggle;
+Home is translated while other pages keep their English content.
 To opt into development interception, copy `.env.example` to `.env.local`, set
 `VITE_API_MOCKING=true`, and restart Vite. No handlers or backend endpoints are
 added by default. Hooks activate through `pnpm prepare` when in a Git checkout.

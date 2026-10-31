@@ -1,6 +1,6 @@
 /** @jest-environment jsdom */
 import { afterEach, beforeEach, expect, jest, test } from '@jest/globals';
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import {
   AppearanceProvider,
   useAppearance,
@@ -54,7 +54,7 @@ test('a user action updates the visible preference, document, and persisted valu
       <Preferences />
     </AppearanceProvider>,
   );
-  expect(screen.getByLabelText('Current preferences').textContent).toBe('system/mint');
+  expect(screen.getByLabelText('Current preferences').textContent).toBe('light/mint');
   fireEvent.click(screen.getByRole('button', { name: 'Use dark rose' }));
   expect(screen.getByLabelText('Current preferences').textContent).toBe('dark/rose');
   expect(document.documentElement.style.colorScheme).toBe('dark');
@@ -95,44 +95,21 @@ test('syncs preferences from another tab and resets after storage is cleared', (
   );
   expect(screen.getByLabelText('Current preferences').textContent).toBe('light/violet');
   fireEvent(window, new StorageEvent('storage', { key: null, storageArea: localStorage }));
-  expect(screen.getByLabelText('Current preferences').textContent).toBe('system/mint');
+  expect(screen.getByLabelText('Current preferences').textContent).toBe('light/mint');
 });
 
-test('system mode follows media-query changes and releases the listener on unmount', () => {
-  const events = new EventTarget();
-  let dark = false;
-  const remove = jest.fn((type: string, listener: EventListenerOrEventListenerObject) => {
-    events.removeEventListener(type, listener);
-  });
-  Object.defineProperty(window, 'matchMedia', {
-    configurable: true,
-    value: () => ({
-      get matches() {
-        return dark;
-      },
-      addEventListener: events.addEventListener.bind(events),
-      removeEventListener: remove,
-    }),
-  });
-  const { unmount } = render(
+test('legacy system preferences use light without subscribing to device appearance', () => {
+  localStorage.setItem(appearanceKey, JSON.stringify({ mode: 'system', accent: 'rose' }));
+  const media = jest.fn(() => ({ matches: true }));
+  Object.defineProperty(window, 'matchMedia', { configurable: true, value: media });
+  render(
     <AppearanceProvider>
       <Preferences />
     </AppearanceProvider>,
   );
+  expect(screen.getByLabelText('Current preferences').textContent).toBe('light/rose');
   expect(document.documentElement.dataset.mode).toBe('light');
-  dark = true;
-  act(() => {
-    events.dispatchEvent(new Event('change'));
-  });
-  expect(document.documentElement.dataset.mode).toBe('dark');
-  fireEvent.click(screen.getByRole('button', { name: 'Use dark rose' }));
-  dark = false;
-  act(() => {
-    events.dispatchEvent(new Event('change'));
-  });
-  expect(document.documentElement.dataset.mode).toBe('dark');
-  unmount();
-  expect(remove).toHaveBeenCalledWith('change', expect.any(Function));
+  expect(media).not.toHaveBeenCalled();
 });
 
 test('unavailable storage and media APIs fall back to a usable local light theme', () => {
@@ -150,7 +127,7 @@ test('unavailable storage and media APIs fall back to a usable local light theme
       <Preferences />
     </AppearanceProvider>,
   );
-  expect(screen.getByLabelText('Current preferences').textContent).toBe('system/mint');
+  expect(screen.getByLabelText('Current preferences').textContent).toBe('light/mint');
   expect(document.documentElement.dataset.mode).toBe('light');
   fireEvent(window, new StorageEvent('storage', { key: appearanceKey, newValue: '{}' }));
   fireEvent.click(screen.getByRole('button', { name: 'Use dark rose' }));
@@ -179,5 +156,5 @@ test('unrelated storage events do not override the current appearance', () => {
       storageArea: localStorage,
     }),
   );
-  expect(screen.getByLabelText('Current preferences').textContent).toBe('system/mint');
+  expect(screen.getByLabelText('Current preferences').textContent).toBe('light/mint');
 });

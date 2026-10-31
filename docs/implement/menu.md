@@ -1,201 +1,134 @@
 # Menu: code design
 
-Source guide for the current implementation. Product behavior is defined in
-[menu requirements](../requirement/menu.md). Appearance integration is described in
-[theme implementation](theme.md).
+**Updated:** 2026-10-31
 
-## 1. Modules and dependency flow
+**Requirements:** [menu.md](../requirement/menu.md)
 
-```text
-route-paths.ts ────────────────→ router.tsx (route registration)
-      ↓
-menu.json → menu-schema.ts → vite.config.ts (startup/build validation)
-                 ↓
-             app-shell.tsx (state and router subscriptions)
-                 ↓
-         menu-navigation.tsx (recursive rendering)
-                 ↓
-       TanStack Link / owned Button / Base UI Tooltip
-```
+## Files and boundaries
 
-| Source | Main exports or symbols |
+| File | Responsibility |
 | --- | --- |
-| [route-paths.ts](../../src/shared/routing/route-paths.ts) | `routePaths`, `MenuTarget` |
-| [menu.json](../../src/features/navigation/config/menu.json) | The raw `items` tree; currently Home and About |
-| [menu-schema.ts](../../src/features/navigation/model/menu-schema.ts) | `iconNames`, `MenuIcon`, `MenuItem`, `parseMenu`, `activeGroups` |
-| [app-shell.tsx](../../src/app/app-shell.tsx) | `AppShell`; owns menu state, persistence, router events, and focus refs |
-| [menu-navigation.tsx](../../src/features/navigation/components/menu-navigation.tsx) | `MenuNavigation`; private `MenuList`, `MenuEntry`, and `icons` registry |
-| [router.tsx](../../src/app/router.tsx) | Code-based route tree and typed router registration |
-| [styles.css](../../src/app/styles.css) | Layout, visibility, nesting, active states, and tooltip/drawer presentation |
+| [app-shell.tsx](../../src/app/app-shell.tsx) | Sidebar/drawer composition, local navigation state, focus, Outlet, and footer |
+| [menu.json](../../src/features/navigation/config/menu.json) | Shared navigation configuration |
+| [menu-schema.ts](../../src/features/navigation/model/menu-schema.ts) | `MenuItem`, `MenuIcon`, `parseMenu`, and `activeGroups` |
+| [menu-navigation.tsx](../../src/features/navigation/components/menu-navigation.tsx) | Recursive list, typed links, group buttons, and collapsed tooltips |
+| [route-paths.ts](../../src/shared/routing/route-paths.ts) | Shared `routePaths` and inferred `MenuTarget` union |
+| [router.tsx](../../src/app/router.tsx) | Code-based route registration and router hosting base |
+| [menu-settings.tsx](../../src/app/menu-settings.tsx) | Ordered composition of language, mode, and accent controls |
+| [language-toggle.tsx](../../src/shared/i18n/language-toggle.tsx) | Direct English/Chinese toggle using shared i18next |
+| [mode-toggle.tsx](../../src/features/appearance/components/mode-toggle.tsx) | Direct Light/Dark toggle using the appearance provider |
+| [appearance-settings.tsx](../../src/features/appearance/components/appearance-settings.tsx) | Accent-only dialog and reset |
+| [styles.css](../../src/app/styles.css) | Responsive layout, focus, menu states, tooltips, and settings row |
 
-## 2. Data model and route types
+AppShell composes navigation and appearance features. Navigation state stays local
+to AppShell; appearance belongs to its provider-owned Zustand store; language
+belongs to i18next. Shared modules do not import application or feature modules.
 
-`routePaths` is declared with `as const`. `MenuTarget` is the union of its values,
-currently `'/' | '/about'`. Both route registration and validation use these constants.
-JSON labels and order remain separate from route registration.
+## Configuration and route validation
 
-The following is an excerpt from `menu-schema.ts`, not a standalone module:
+`MenuItem` is a readonly discriminated union: common ID/label/optional icon plus
+either `type: 'link'` with `to: MenuTarget`, or `type: 'group'` with children.
+`MenuTarget` derives from `routePaths`, currently `/` and `/about`. Router registration
+and the parser share those paths; no generated route tree or unchecked route cast
+is needed.
 
-```ts
-type Common = { readonly id: string; readonly label: string; readonly icon?: MenuIcon };
-export type MenuItem = Common &
-  (
-    | { readonly type: 'link'; readonly to: MenuTarget }
-    | { readonly type: 'group'; readonly children: readonly MenuItem[] }
-  );
-```
+`parseMenu(unknown)` recursively validates objects and non-empty lists, tracks IDs
+in one Set across the tree, checks trimmed non-empty strings, and rejects unknown
+fields, unsupported icons, and unregistered targets. Top-level icons are required.
+Errors include the JSON path and entry ID when available. Supported icon names are
+Home, Info, Atom, PanelsTopLeft, FileCode, and Folder.
 
-The `type` discriminant lets rendering narrow to `to` or `children` without casts.
-The parser enforces stricter runtime rules than this type: top-level icons are
-required, groups are non-empty, and link/group-only fields cannot be mixed.
-All IDs must be unique across the tree because IDs are React keys and group-state keys.
+Vite configuration calls `parseMenu` before serving/building; AppShell also parses
+the imported JSON. `activeGroups(items, target)` returns ancestor group IDs for an
+exact matching descendant. Invalid/not-found targets yield no active ancestors.
 
-`MenuIcon` comes from `iconNames`. The renderer's `icons` object uses
-`satisfies Record<MenuIcon, typeof Home>`, so adding a supported icon requires
-updating its named Lucide import and registry entry. There are no dynamic icon imports.
+JSON paths exclude the hosting prefix. Typed TanStack Links use `/` and `/about`;
+the router adds `basepath: import.meta.env.BASE_URL` under `/lab/react/v2/`.
 
-## 3. Runtime validation: `parseMenu`
+## AppShell state and events
 
-Signature: `parseMenu(value: unknown): readonly MenuItem[]`.
-
-Each invocation creates a fresh `Set<string>` for duplicate detection. Its private
-`items(value, path, top)` function recursively validates and constructs entries:
-
-1. Require a non-empty array and object entries.
-2. Check non-empty IDs/labels and reject duplicate IDs.
-3. Check icon names; `top` controls whether an icon is mandatory.
-4. Reject fields outside the allowed keys for the selected entry type.
-5. For a link, narrow `to` through `isTarget`, which compares against `routePaths`.
-6. For a group, recursively parse `children` with `top = false`.
-
-`record`, `isIcon`, and `isTarget` are type guards. Validated objects are constructed
-from accepted fields instead of asserting the input type. `fail(path, message)`
-throws an error containing the JSON location and, when available, the entry ID.
-
-[vite.config.ts](../../vite.config.ts) calls `parseMenu(menuConfig)` while loading
-configuration. AppShell also parses the JSON once at module scope. Invalid JSON
-structure therefore stops Vite startup/build and cannot silently render bad links.
-The parser checks allowed path constants; TypeScript checks their compatibility
-with the registered TanStack routes when compiling the renderer's `Link`.
-
-The explicit `.ts` import in the validator supports execution from Vite and Jest's
-test transform. [tsconfig.json](../../tsconfig.json) permits those extensions with
-`allowImportingTsExtensions` and `noEmit`.
-
-## 4. Active group calculation
-
-Signature: `activeGroups(items: readonly MenuItem[], target: string): string[]`.
-
-For each group, recursively collect matching descendant groups. Include the current
-group when a direct child link matches `target` or any descendant group matched.
-Links return no group IDs. The result contains the entire ancestor chain and is
-independent of the user's current expansion choices.
-
-AppShell reads the last matched `routeId` using `useRouterState`. A match with
-`status === 'notFound'` yields an empty target. With the current root-child route
-structure, route IDs match the menu's path strings. If pathless layouts, dynamic
-parameters, or a different route structure are added, revisit this target mapping
-rather than assuming every route ID is a navigable pathname.
-
-## 5. State ownership in `AppShell`
-
-| Symbol | Type / initialization | Writes and consumers |
-| --- | --- | --- |
-| `collapsed` | Boolean; lazy `readCollapsed` initializer | Toggle button and `onGroup`; controls grid width and renderer props |
-| `drawerOpen` | Boolean; initially false | Dialog callbacks, router resolution, same-page selection, resize |
-| `openGroups` | `ReadonlySet<string>` initialized from active ancestors | `onGroup` and router resolution; shared by both navigation instances |
-| `currentPath` | Router-selected target | `activeGroups` calculation and same-page detection |
-| `active` | Derived group-ID array | Ancestor styling; not duplicated in React state |
-| `closeDestination` | Ref: `'trigger' | 'content' | 'desktop'` | Dialog `finalFocus`; avoids a render just to choose a focus target |
-
-`readCollapsed` accepts only the stored string `'true'`. An effect writes the
-boolean as a string under `gjp-lab.sidebar.collapsed`; read/write failures are caught.
-Group expansion and drawer visibility stay in memory. Theme preferences are handled
-by the separate AppearanceProvider.
-
-`onGroup(id)` copies the previous Set before adding/deleting an ID. If the desktop
-sidebar is collapsed, it first expands the sidebar and ensures the selected group
-is open. The rendered button stays mounted so it retains keyboard focus.
-
-## 6. Event and focus control flow
-
-| Event | Code path |
+| State/ref | Role |
 | --- | --- |
-| Ordinary page-link click | `MenuEntry` filters modified/non-left/prevented clicks, then calls `onNavigate(item.to)` |
-| Same-page selection | `onNavigate` sets the destination to content and closes the drawer directly |
-| Different-page navigation | `onNavigate` returns; the router's `onResolved` subscription handles completion |
-| Initial route resolution | Merge active ancestors and close the drawer; leave focus where it is |
-| Navigation / Back / Forward | Merge active ancestors, close drawer, and focus `mainRef` only when there is a previous location and the pathname changes |
-| Dialog open/close callback | Set destination to trigger and update `drawerOpen` |
-| Resize to desktop | Set destination to desktop, close drawer, and transfer focus if the mobile trigger was focused |
-| Resize to mobile | If focus belonged to desktop navigation, focus the mobile trigger |
+| `collapsed` | Lazy storage read; only the string `'true'` means collapsed. An effect persists updates under `gjp-lab.sidebar.collapsed`, catching storage failures. |
+| `drawerOpen` | Separate boolean, initially false; never persisted. |
+| `openGroups` | Readonly Set initialized from active ancestors. User actions update it immutably; route resolution merges in current ancestors. |
+| `currentPath` | Derived from router matches; becomes empty on not-found routes. |
+| `mainRef`, `desktopRef`, control refs | Focus destinations and responsive visibility checks. |
+| `closeDestination` | Distinguishes return to the mobile trigger, main content, or desktop toggle. |
 
-The initial page load does not focus the main landmark. This avoids stealing focus
-and showing the accent-colored `:focus-visible` outline around the whole page.
-Actual page changes retain the main focus handoff for keyboard navigation.
+`onGroup` toggles a group. When the desktop sidebar is collapsed, it first expands
+and ensures that group is open. `onNavigate` handles selecting the current page,
+which may not emit a route resolution event.
 
-The media-query effect uses `(min-width: 1024px)`. It remembers the last focused
-element through `focusin`, because hiding an element may clear `document.activeElement`
-before the media-query callback runs. Cleanup removes both listeners. The router
-effect returns its unsubscribe function.
+The router `onResolved` subscription opens current ancestors and closes the drawer.
+It focuses main only when a previous location exists and the pathname changes,
+preventing a page-sized focus ring on initial load. Modified/new-tab clicks bypass
+same-tab navigation handling in the recursive renderer.
 
-`mainRef`, `desktopRef`, `toggleRef`, `mobileRef`, and `closeRef` identify focus targets.
-Dialog `initialFocus` uses `closeRef`; `finalFocus` selects a ref from
-`closeDestination`. Base UI owns modal containment, dismissal, and scroll locking.
+The 1024px media-query listener closes the drawer on desktop entry. A `focusin`
+listener remembers focus and transfers it when a desktop/mobile control disappears.
+Both listeners and the router subscription clean up on unmount.
 
-## 7. Recursive component rendering
+## Rendering and focus
 
-`MenuNavigation` adds the labeled navigation landmark. `MenuList` maps entries to
-`MenuEntry` using `item.id` as the key. `MenuEntry` renders either:
+`MenuNavigation` renders labeled navigation through recursive `MenuList`/`MenuEntry`.
+Links use exact active matching, `aria-current="page"`, and `menu-current`. Groups
+use the owned Button, ancestor styling, a chevron, and `aria-expanded`/`aria-controls`.
+`useId` connects each group to its child container, which stays mounted but hidden
+when closed or collapsed.
 
-- A typed `Link` with exact active matching, `menu-current`, and `aria-current="page"`.
-- An owned Button with `aria-expanded`, `aria-controls`, a chevron, and `onGroup`.
+Collapsed entries retain screen-reader labels and Base UI tooltips portaled outside
+the scroll container. The header's collapse/expand control is always icon-only,
+with its own label, tooltip, and expanded/control attributes. Expanded headers place
+it beside the brand; collapsed headers stack it below the brand icon.
 
-Each group gets a unique panel ID from `useId`. Its child `MenuList` is inside a
-`div` hidden when the group is closed or the sidebar is collapsed. Keeping that
-subtree mounted preserves element identity while removing hidden controls from
-keyboard navigation.
+Base UI Dialog owns the mobile backdrop, focus containment, dismissal, and scroll
+locking. Initial focus goes to Close navigation. Final focus uses `closeDestination`
+to return to the opener, main content after navigation, or the desktop toggle after
+resizing. The separate accent dialog may nest inside the drawer without closing it.
 
-Tooltip's `render` prop composes with the existing Link/Button. Tooltips are enabled
-only when collapsed and portal outside the scrolling sidebar. Do not replace this
-composition with a Radix `asChild` pattern.
+## Bottom control composition
 
-Desktop and mobile render separate instances from the same parsed tree and shared
-state. CSS hides desktop navigation below 1024px; the drawer uses a Base UI portal.
-The `Outlet` remains in one main content container, so changing menu state does not
-replace the active page component. Menu styles consume the shared appearance tokens.
+`MenuSettings` renders three native Buttons in this order:
 
-## 8. Extension and debugging map
-
-| Change or symptom | Code to inspect/change |
+| Component | Implementation |
 | --- | --- |
-| Add a page | Create its component, add `routePaths`, register in `router.tsx`, then add the JSON link |
-| Add a nested group | Add a group with unique ID and non-empty `children` in JSON |
-| Add an icon | Update `iconNames` and the renderer's `icons` mapping |
-| Invalid-menu startup error | Read the reported JSON location/ID; inspect `parseMenu` guards |
-| Wrong active parent | Check target-to-route-ID mapping and `activeGroups` |
-| Drawer closes at the wrong time | Check click filtering, `onNavigate`, and `onResolved` |
-| Focus lost after resize | Check remembered focus, media-query callback, and Dialog focus refs |
-| Change breakpoint or widths | Update CSS and the AppShell media query together |
+| LanguageToggle | Reads `i18n.resolvedLanguage`, displays CaseUpper for English or Languages for Chinese, and calls `changeLanguage` with the opposite locale. Uses translated button names, next-action titles/tooltips, and its own `lang` attribute. No select, popup, or duplicate language state. |
+| ModeToggle | Reads `appearance.mode`; displays Sun or Moon and calls `update` with the opposite explicit mode while preserving accent. The stable accessible name is “Dark mode”; `aria-pressed` reflects Dark. No mode dialog or System option. |
+| AppearanceSettings | Opens the accent-only dialog through Base UI render composition. Selecting/resetting an accent preserves mode; reset restores Mint. The Palette icon uses the current primary color. |
 
-## 9. Tests and verification boundaries
+Language is session-only. Mode/accent persist through the appearance provider;
+legacy saved System values parse as Light while preserving a valid accent. See
+[appearance code design](theme.md) for startup, migration, storage, and focus return.
+Home subscribes to the language; the control is not rendered inside Home.
 
-[menu.test.js](../../src/features/navigation/__tests__/menu.test.js) contains eight Jest tests in the Node environment covering the
-shipped JSON, recursive active groups, duplicate IDs, bad routes/icons/labels,
-empty/mixed groups, child icon rules, and invalid root/item shapes.
+## CSS and extension points
 
-```sh
-pnpm test src/features/navigation/__tests__/menu.test.js
-pnpm check
-pnpm build
-```
+At viewport widths of 1024px or more, `.app-layout` reserves 240px for the sticky
+sidebar, or 64px under `.sidebar-collapsed`. `.sidebar-scroll` handles long menus;
+`.sidebar-settings` uses `margin-top: auto`. Below the breakpoint, the desktop
+sidebar is hidden and the mobile header/drawer are used.
 
-The model suite covers configuration logic. The recursive navigation suite adds
-group expansion, active links, collapsed access, and modified-click checks. The
-application suite exercises routes/history, drawer actions, resize focus transfer,
-and the initial-load focus regression in jsdom.
+`.menu-settings` is a horizontal flex row with 44px controls in the expanded sidebar
+and drawer; the collapsed rail switches to a column. The drawer is a flex column
+and pushes `.drawer-settings` to its bottom. Semantic theme tokens provide surfaces,
+active states, hover, and focus. Reduced-motion rules disable menu transitions.
 
-Real-browser verification is still required for physical layout, complete keyboard
-behavior, zoom, responsive visibility, scroll locking, and assistive technology.
-See the [menu checklist](../requirement/menu.md) and
-[verification summary](../README.md#verification).
+To add a page, implement/register its route and shared path, then add a JSON link.
+To add a group, wrap real links in a non-empty group with a globally unique ID.
+To add an icon, update both the schema's `iconNames` and the renderer's named Lucide
+mapping. Menu changes require a deployment rebuild. Footer controls are application
+composition and do not belong in navigation JSON.
+
+## Verification
+
+[Schema tests](../../src/features/navigation/__tests__/menu.test.js),
+[renderer tests](../../src/features/navigation/__tests__/menu-navigation.test.tsx), and
+[application tests](../../src/app/__tests__/application.test.tsx) cover validation,
+groups, active links, collapse persistence, route focus, responsive transitions,
+footer order, direct toggles, changing icons, and nested accent settings.
+
+Run `pnpm check`, `pnpm test:coverage`, and `pnpm build` for code changes. This
+documentation update changes no runtime behavior. Local links and source names
+were checked against the implementation. Browser layout, real keyboard behavior,
+and production-host checks remain pending; see the [requirements checklist](../requirement/menu.md).

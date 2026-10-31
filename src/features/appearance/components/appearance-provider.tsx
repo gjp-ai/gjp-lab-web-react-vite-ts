@@ -13,7 +13,6 @@ import {
   appearanceKey,
   parseAppearance,
   readAppearance,
-  resolveMode,
 } from '@/features/appearance/model/appearance';
 import { createAppearanceStore } from '../model/appearance-store';
 
@@ -30,20 +29,11 @@ function initialAppearance() {
     return parseAppearance(null, accents);
   }
 }
-function systemIsDark() {
-  try {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches;
-  } catch {
-    return false;
-  }
-}
-
 export function AppearanceProvider({ children }: { readonly children: ReactNode }) {
   const [store] = useState(() => createAppearanceStore(initialAppearance()));
   const appearance = useStore(store, (state) => state.appearance);
   const setAppearance = store.getState().setAppearance;
-  const [systemDark, setSystemDark] = useState(systemIsDark);
-  const resolved = resolveMode(appearance.mode, systemDark);
+  const resolved = appearance.mode;
   useLayoutEffect(() => {
     const root = document.documentElement;
     root.dataset.mode = resolved;
@@ -55,15 +45,6 @@ export function AppearanceProvider({ children }: { readonly children: ReactNode 
   }, [resolved, appearance.accent]);
 
   useEffect(() => {
-    let query: MediaQueryList | undefined;
-    const onSystemChange = () => setSystemDark(query?.matches ?? false);
-    try {
-      query = window.matchMedia('(prefers-color-scheme: dark)');
-      query.addEventListener('change', onSystemChange);
-      onSystemChange();
-    } catch {
-      /* Unsupported media queries fall back to light. */
-    }
     function onStorage(event: StorageEvent) {
       try {
         if (event.storageArea !== window.localStorage) return;
@@ -75,7 +56,6 @@ export function AppearanceProvider({ children }: { readonly children: ReactNode 
     }
     window.addEventListener('storage', onStorage);
     return () => {
-      query?.removeEventListener('change', onSystemChange);
       window.removeEventListener('storage', onStorage);
     };
   }, [setAppearance]);
